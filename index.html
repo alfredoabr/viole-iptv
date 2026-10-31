@@ -245,6 +245,8 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .menu-item:hover { background: var(--surface-2); }
 .menu-item svg.i { color: var(--muted); }
 .menu-item.hidden { display: none; }
+.engine-mark { margin-left: auto; color: var(--accent); font-weight: 600; }
+.engine-mark.on::after { content: '✓'; }
 .menu-quality { display: flex; align-items: center; gap: 10px; padding: 6px 10px; font-size: 13px; }
 .menu-quality select { flex: 1; height: 32px; }
 
@@ -647,7 +649,10 @@ body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
             <div class="menu-quality hidden" id="qualityRow"><span>Calidad</span><select class="field" id="quality"></select></div>
             <button class="menu-item" data-act="retry"><svg class="i"><use href="#i-refresh"/></svg>Reconectar <span style="margin-left:auto;color:var(--faint)">R</span></button>
             <button class="menu-item" data-act="pip"><svg class="i"><use href="#i-pip"/></svg>Ventana flotante</button>
-            <button class="menu-item" data-act="native"><svg class="i"><use href="#i-play"/></svg>Probar reproductor del sistema</button>
+            <div class="menu-label">Motor de este canal (se recuerda)</div>
+            <button class="menu-item" data-act="engine-native"><svg class="i"><use href="#i-play"/></svg>Reproductor del sistema<span class="engine-mark" data-engine="native"></span></button>
+            <button class="menu-item" data-act="engine-hls"><svg class="i"><use href="#i-play"/></svg>hls.js<span class="engine-mark" data-engine="hls"></span></button>
+            <button class="menu-item" data-act="engine-auto"><svg class="i"><use href="#i-refresh"/></svg>Automático<span class="engine-mark" data-engine="auto"></span></button>
             <button class="menu-item" data-act="info"><svg class="i"><use href="#i-gear"/></svg>Info técnica del canal</button>
             <button class="menu-item" data-act="copy"><svg class="i"><use href="#i-copy"/></svg>Copiar enlace (para VLC / mpv)</button>
             <button class="menu-item android-only" data-act="external"><svg class="i"><use href="#i-ext"/></svg>Abrir en otra app</button>
@@ -1324,6 +1329,15 @@ function playChannel(ch, opts = {}) {
   if (!opts.keepReconnects && Math.random() < 0.3) setTimeout(() => catSay(violeLine('zap')), 900);
 }
 
+// Motor elegido a mano para cada canal (por su enlace). Se guarda en el dispositivo.
+const enginePrefs = Store.get('engines', {});
+function engineFor(url) { return enginePrefs[url] || 'auto'; }
+function setEngineFor(url, engine) {
+  if (engine === 'auto') delete enginePrefs[url]; else enginePrefs[url] = engine;
+  const keys = Object.keys(enginePrefs);
+  if (keys.length > 300) delete enginePrefs[keys[0]];          // no crecer sin límite
+  Store.set('engines', enginePrefs);
+}
 function startStream(url, { native = false } = {}) {
   const token = ++Engine.token;
   teardown();
@@ -1348,8 +1362,11 @@ function startStream(url, { native = false } = {}) {
   const hlsOk = window.Hls && Hls.isSupported();
 
   // En Apple se prueba primero su reproductor; si no arranca, se pasa a hls.js (y al revés en el resto).
+  const choice = native ? 'native' : engineFor(url);
+  if (choice === 'hls' && hlsOk && !isFile) { startHls(url, token); return; }
+  if (choice === 'native' && canNativeHls()) { startNative(url, token, false); return; }
   const preferNative = IS_APPLE && canNativeHls();
-  if (native || isFile || !hlsOk || preferNative) startNative(url, token, !native && hlsOk && !isFile);
+  if (isFile || !hlsOk || preferNative) startNative(url, token, hlsOk && !isFile);
   else startHls(url, token);
 }
 
@@ -2140,7 +2157,12 @@ document.addEventListener('fullscreenchange', () => { if (!document.fullscreenEl
 // Menú ⋯ del reproductor
 const menu = $('#menuTools');
 document.querySelectorAll('.android-only').forEach((n) => n.classList.toggle('hidden', !IS_ANDROID));
-$('#btnTools').addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+$('#btnTools').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const eng = state.current ? engineFor(state.current.url) : 'auto';
+  menu.querySelectorAll('.engine-mark').forEach((m) => m.classList.toggle('on', m.dataset.engine === eng));
+  menu.classList.toggle('hidden');
+});
 document.addEventListener('click', (e) => { if (!e.target.closest('.menu-wrap')) menu.classList.add('hidden'); });
 menu.addEventListener('click', async (e) => {
   const item = e.target.closest('[data-act]');
@@ -2149,9 +2171,13 @@ menu.addEventListener('click', async (e) => {
   const act = item.dataset.act;
   if (!state.current) { toast('Primero elige un canal'); return; }
   if (act === 'retry') playChannel(state.current);
-  if (act === 'native') {
-    if (!canNativeHls()) toast('Este navegador no tiene reproductor HLS propio. Usa "Copiar enlace" y ábrelo en VLC o mpv.', true);
-    else playChannel(state.current, { native: true });
+  if (act.startsWith('engine-')) {
+    const engine = act.slice(7);
+    if (engine === 'native' && !canNativeHls()) { toast('Este navegador no tiene reproductor propio de HLS. Usa hls.js o «Copiar enlace» para VLC/mpv.', true); return; }
+    if (engine === 'hls' && !(window.Hls && Hls.isSupported())) { toast('hls.js no funciona en este navegador.', true); return; }
+    setEngineFor(state.current.url, engine);
+    toast(engine === 'auto' ? 'Motor automático para este canal' : `Este canal usará ${engine === 'hls' ? 'hls.js' : 'el reproductor del sistema'}`);
+    playChannel(state.current);
   }
   if (act === 'copy') copyCurrentUrl();
   if (act === 'info') {
