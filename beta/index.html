@@ -249,7 +249,7 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .menu-quality select { flex: 1; height: 32px; }
 
 /* Escenario de vídeo */
-.stage { flex: 1; min-height: 0; position: relative; background: #000; display: grid; place-items: center; overflow: hidden; }
+.stage { flex: 1; min-height: 0; position: relative; background: #000; display: grid; place-items: center; overflow: hidden; container-type: size; }
 .stage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
 .stage.pseudo-fs { position: fixed; inset: 0; z-index: 100; }
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; z-index: 5; }
@@ -351,6 +351,10 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .stage-cat .cat svg { filter: drop-shadow(0 0 .7px rgba(255,255,255,.5)) drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
 .stage-cat .cat-bubble { bottom: 70px; font-size: 16px; max-width: 320px; padding: 10px 14px; border-radius: 14px; background: rgba(19,19,22,.92); }
 .stage.is-fs .stage-cat { display: block; }   /* la pantalla completa la marca JavaScript: más fiable que :fullscreen */
+/* Sobre el vídeo también fuera de pantalla completa: tamaño proporcional al vídeo */
+.stage.cat-on-video .stage-cat { display: block; }
+.stage.cat-on-video:not(.is-fs) .stage-cat .cat { width: auto; aspect-ratio: 158 / 120; height: 96px; height: clamp(54px, 27cqh, 120px); }
+.stage.cat-on-video:not(.is-fs) .stage-cat .cat-bubble { bottom: 62%; font-size: 13px; max-width: 220px; padding: 7px 11px; }
 
 body.no-cat .cat { display: none; }
 body.reduce-motion .cat, body.reduce-motion .cat * { animation: none !important; transition: none !important; }
@@ -795,6 +799,7 @@ body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
     <div class="grp">
       <span class="grp-label">Viole</span>
       <div class="switch-row"><span>Viole pasea (y se asoma en pantalla completa)</span><span class="switch"><input type="checkbox" id="catToggle" aria-label="Mostrar a Viole"></span></div>
+      <div class="switch-row"><span>Viole camina sobre el vídeo (si no, solo en la barra)</span><span class="switch"><input type="checkbox" id="catVideoToggle" aria-label="Viole sobre el vídeo"></span></div>
       <div class="switch-row hidden" id="motionRow"><span>Este dispositivo tiene las animaciones reducidas. ¿Que Viole camine igual?</span><span class="switch"><input type="checkbox" id="motionToggle" aria-label="Animar a Viole igualmente"></span></div>
     </div>
     <div class="grp">
@@ -1180,6 +1185,7 @@ function markActiveRow() {
 function renderNowPlaying() {
   const ch = state.current;
   $('#emptyStage').classList.toggle('hidden', !!ch);
+  if (typeof syncCatPlace === 'function') syncCatPlace();
   if (!ch) return;
   $('#nowLogo').replaceWith(Object.assign(logoNode(ch), { id: 'nowLogo' }));
   $('#nowName').textContent = ch.name;
@@ -1707,7 +1713,7 @@ function catMode() {
   if (mqTouch.matches) return 'peek';
   return 'roam';
 }
-function catTrack() { return isFullscreen() ? $('#stageCatTrack') : $('#catTrack'); }
+function catTrack() { return (isFullscreen() || stage.classList.contains('cat-on-video')) ? $('#stageCatTrack') : $('#catTrack'); }
 function catW() { return catEl.offsetWidth || 58; }
 function catMax() { return Math.max(0, catTrack().clientWidth - catW()); }
 function catSet(x, ms) {
@@ -1858,6 +1864,12 @@ $('#catTrack').addEventListener('pointerdown', (e) => {
 });
 ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => { syncFsClass(); setTimeout(catRefresh, 120); }));
 new MutationObserver(catRefresh).observe(stage, { attributes: true, attributeFilter: ['class'] });   // pseudo pantalla completa
+// Con un canal en pantalla, Viole camina sobre el vídeo; sin canal o sin señal, vuelve a la barra.
+function syncCatPlace() {
+  const on = state.settings.catOnVideo !== false && !!state.current && $('#error').classList.contains('hidden');
+  stage.classList.toggle('cat-on-video', on);
+}
+new MutationObserver(syncCatPlace).observe($('#error'), { attributes: true, attributeFilter: ['class'] });
 mqPortrait.addEventListener('change', () => setTimeout(catRefresh, 250));
 let catResizeT;
 window.addEventListener('resize', () => { clearTimeout(catResizeT); catResizeT = setTimeout(catRefresh, 200); });
@@ -2167,7 +2179,9 @@ function updateMotion() {
   document.body.classList.toggle('reduce-motion', REDUCED_MOTION);
   $('#motionRow').classList.toggle('hidden', !mqReduce.matches);   // solo se ofrece si el sistema reduce animaciones
   $('#motionToggle').checked = !!state.settings.forceMotion;
+  $('#catVideoToggle').checked = state.settings.catOnVideo !== false;
 }
+$('#catVideoToggle').addEventListener('change', (e) => { state.settings.catOnVideo = e.target.checked; saveSettings(); syncCatPlace(); });
 $('#motionToggle').addEventListener('change', (e) => { state.settings.forceMotion = e.target.checked; saveSettings(); updateMotion(); catRun(); });
 $('#btnSettings').addEventListener('click', async () => {
   $('#kvLists').textContent = `${state.playlists.length} · ${DB.available ? 'guardadas' : 'solo en esta sesión'}`;
