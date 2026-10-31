@@ -333,7 +333,11 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 
 /* Franja de Viole sobre el vídeo (solo en pantalla completa) */
 .stage-cat { display: none; position: absolute; left: 0; right: 0; bottom: 76px; height: 76px; z-index: 4; pointer-events: none; overflow: hidden; }
-.stage:fullscreen .stage-cat, .stage:-webkit-full-screen .stage-cat, .stage.pseudo-fs .stage-cat { display: block; }
+.stage:fullscreen .stage-cat { display: block; }
+.stage.pseudo-fs .stage-cat { display: block; }
+/* Reglas separadas a propósito: si un navegador no entiende un selector de la lista,
+   descarta la regla entera (Firefox no entiende -webkit-full-screen). */
+.stage:-webkit-full-screen .stage-cat { display: block; }
 .stage-cat .cat { width: 100px; height: 76px; bottom: 0; pointer-events: none; cursor: default; }
 .stage-cat .cat svg { filter: drop-shadow(0 0 .7px rgba(255,255,255,.5)) drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
 .stage-cat .cat-bubble { display: none; }
@@ -1419,9 +1423,22 @@ function openExternal() {
 /* ---------- Pantalla completa ---------- */
 const stage = $('#stage');
 function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement) || stage.classList.contains('pseudo-fs'); }
+// Si se usa el botón de pantalla completa del propio vídeo (Firefox lo muestra),
+// se intenta pasar a la pantalla completa de la app, donde sí puede aparecer Viole.
+// Si el navegador no lo permite, se queda como está.
+let fsExiting = false;
+document.addEventListener('fullscreenchange', () => {
+  const el = document.fullscreenElement;
+  if (!el) { fsExiting = false; return; }
+  if (el === video) {
+    if (fsExiting) { document.exitFullscreen().catch(() => {}); return; }
+    stage.requestFullscreen().catch(() => {});
+  }
+});
 async function toggleFullscreen() {
   if (stage.classList.contains('pseudo-fs')) { stage.classList.remove('pseudo-fs'); return; }
   if (document.fullscreenElement || document.webkitFullscreenElement) {
+    fsExiting = true;
     try { await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen()); } catch {}
     return;
   }
