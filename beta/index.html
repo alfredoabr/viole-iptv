@@ -1425,7 +1425,10 @@ function catStop() { catEl.classList.remove('walking'); }
 function catSleep(ms, gen) {                  // espera; devuelve false si el paseo quedó viejo
   return new Promise((resolve) => { Cat.timer = setTimeout(() => resolve(gen === Cat.gen), ms); });
 }
-const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+const nextFrame = () => new Promise((r) => {          // 2 fotogramas, o 120 ms si la pestaña está en segundo plano
+  let done = false; const go = () => { if (!done) { done = true; r(); } };
+  requestAnimationFrame(() => requestAnimationFrame(go)); setTimeout(go, 120);
+});
 
 async function catRun(firstDelay) {
   const gen = ++Cat.gen;
