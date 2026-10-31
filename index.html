@@ -648,6 +648,7 @@ body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
             <button class="menu-item" data-act="retry"><svg class="i"><use href="#i-refresh"/></svg>Reconectar <span style="margin-left:auto;color:var(--faint)">R</span></button>
             <button class="menu-item" data-act="pip"><svg class="i"><use href="#i-pip"/></svg>Ventana flotante</button>
             <button class="menu-item" data-act="native"><svg class="i"><use href="#i-play"/></svg>Probar reproductor del sistema</button>
+            <button class="menu-item" data-act="info"><svg class="i"><use href="#i-gear"/></svg>Info técnica del canal</button>
             <button class="menu-item" data-act="copy"><svg class="i"><use href="#i-copy"/></svg>Copiar enlace (para VLC / mpv)</button>
             <button class="menu-item android-only" data-act="external"><svg class="i"><use href="#i-ext"/></svg>Abrir en otra app</button>
           </div>
@@ -847,6 +848,9 @@ if (IS_BETA) { document.body.classList.add('is-beta'); document.title = 'Viole I
 /* ---------- 1. UTILIDADES ---------- */
 const $ = (s) => document.querySelector(s);
 const IS_ANDROID = /Android/i.test(navigator.userAgent);
+// iPhone, iPad (también los que se presentan como Mac) y Safari de Mac: su reproductor propio arranca mejor que hls.js
+const IS_APPLE = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  || (/^((?!chrome|chromium|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent));
 const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 let REDUCED_MOTION = mqReduce.matches;   // se ajusta con el ajuste «que camine igual»
 
@@ -881,13 +885,13 @@ function initials(name) {
   return ((w[0] || '?')[0] + (w[1] ? w[1][0] : (w[0] || '')[1] || '')).toUpperCase();
 }
 let toastTimer;
-function toast(msg, isErr = false) {
+function toast(msg, isErr = false, ms = 3200) {
   const t = $('#toast');
   t.textContent = msg;
   t.classList.toggle('err', isErr);
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); return true; }
@@ -1328,6 +1332,11 @@ function startStream(url, { native = false } = {}) {
   Engine.mediaRetries = 0;
   Engine.hadPlayback = false;
   Engine.live = null;
+  Engine.triedNative = false;
+  Engine.fallbackHls = false;
+  Engine.path = '';
+  Engine.startMs = 0;
+  Engine.t0 = performance.now();
   $('#error').classList.add('hidden');
   $('#btnUnmute').classList.add('hidden');
   showLoading(true);
@@ -1338,8 +1347,10 @@ function startStream(url, { native = false } = {}) {
   const isFile = /\.(mp4|webm|ogv|mov|m4v)(\?|#|$)/i.test(url);
   const hlsOk = window.Hls && Hls.isSupported();
 
-  if (!native && hlsOk && !isFile) startHls(url, token);
-  else startNative(url, token);
+  // En Apple se prueba primero su reproductor; si no arranca, se pasa a hls.js (y al revés en el resto).
+  const preferNative = IS_APPLE && canNativeHls();
+  if (native || isFile || !hlsOk || preferNative) startNative(url, token, !native && hlsOk && !isFile);
+  else startHls(url, token);
 }
 
 function startHls(url, token) {
@@ -1348,13 +1359,15 @@ function startHls(url, token) {
     lowLatencyMode: false,          // la mayoría de IPTV no es "baja latencia"; activarlo provoca más cortes
     backBufferLength: 30,
     maxBufferLength: 30,
-    manifestLoadingMaxRetry: 2,
+    manifestLoadingTimeOut: 8000,   // si el servidor no responde, rendirse antes y probar el otro reproductor
+    manifestLoadingMaxRetry: 1,
     levelLoadingMaxRetry: 3,
     fragLoadingMaxRetry: 4,
     startFragPrefetch: true
   });
   Engine.hls = hls;
   Engine.mode = 'hls';
+  Engine.path = (Engine.path ? Engine.path + ' → ' : '') + 'hls.js';
 
   hls.on(Hls.Events.MANIFEST_PARSED, (_e, data) => {
     if (token !== Engine.token) return;
@@ -1386,7 +1399,7 @@ function startHls(url, token) {
         setTimeout(() => { if (token === Engine.token) playChannel(state.current, { keepReconnects: true }); }, 2500);
         return;
       }
-      if (canNativeHls()) { startNative(Engine.url, token); return; } // el reproductor del sistema no necesita CORS
+      if (canNativeHls() && !Engine.triedNative) { startNative(Engine.url, token, false); return; } // el reproductor del sistema no necesita CORS
       showError('network'); return;
     }
     showError('other');
@@ -1395,11 +1408,24 @@ function startHls(url, token) {
   hls.attachMedia(video);
 }
 
-function startNative(url, token) {
+function startNative(url, token, fallbackHls = false) {
   if (Engine.hls) { try { Engine.hls.destroy(); } catch {} Engine.hls = null; }
   Engine.mode = 'native';
+  Engine.triedNative = true;
+  Engine.fallbackHls = fallbackHls;
+  Engine.path = (Engine.path ? Engine.path + ' → ' : '') + 'sistema';
   video.src = url;
   tryPlay(token);
+  // Si en 12 s no ha arrancado, se prueba con hls.js
+  if (fallbackHls) setTimeout(() => {
+    if (token === Engine.token && Engine.mode === 'native' && !Engine.hadPlayback && Engine.fallbackHls) switchToHls(token);
+  }, 12000);
+}
+function switchToHls(token) {
+  Engine.fallbackHls = false;
+  video.removeAttribute('src');
+  try { video.load(); } catch {}
+  startHls(Engine.url, token);
 }
 
 function tryPlay(token) {
@@ -1421,6 +1447,7 @@ function tryPlay(token) {
 
 video.addEventListener('playing', () => {
   if (!Engine.mode) return;
+  if (!Engine.hadPlayback && Engine.t0) Engine.startMs = performance.now() - Engine.t0;
   Engine.hadPlayback = true;
   showLoading(false);
   setStatus(Engine.mode === 'hls' ? 'En vivo' : 'En vivo · sistema', 'live');
@@ -1429,6 +1456,7 @@ video.addEventListener('playing', () => {
 video.addEventListener('waiting', () => { if (Engine.mode && Engine.hadPlayback) setStatus('Cargando', 'wait'); });
 video.addEventListener('error', () => {
   if (Engine.mode !== 'native' || !video.getAttribute('src')) return;   // en modo HLS los errores los gestiona hls.js
+  if (Engine.fallbackHls && !Engine.hadPlayback) { switchToHls(Engine.token); return; }
   showError(isMixedContent(Engine.url) ? 'mixed' : 'network');
 });
 video.addEventListener('volumechange', () => {
@@ -2126,6 +2154,13 @@ menu.addEventListener('click', async (e) => {
     else playChannel(state.current, { native: true });
   }
   if (act === 'copy') copyCurrentUrl();
+  if (act === 'info') {
+    let host = ''; try { host = new URL(state.current.url).hostname; } catch {}
+    toast([`Motor: ${Engine.path || '–'}`,
+           video.videoHeight ? `${video.videoHeight}p` : 'sin imagen aún',
+           Engine.startMs ? `arrancó en ${(Engine.startMs / 1000).toFixed(1)} s` : 'aún no arranca',
+           host].filter(Boolean).join(' · '), false, 7000);
+  }
   if (act === 'external') openExternal();
   if (act === 'pip') {
     try {
