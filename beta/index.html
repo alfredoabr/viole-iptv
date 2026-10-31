@@ -298,14 +298,15 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .dock-info { flex: none; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--muted); }
 .dock-info .res { color: var(--accent); font-weight: 600; }
 
-.cat-track { flex: 1; align-self: stretch; position: relative; min-width: 0; overflow: hidden; }
+/* Recorta solo por los lados (para esconder a Viole), nunca por arriba: orejas y cola siempre enteras */
+.cat-track { flex: 1; align-self: stretch; position: relative; min-width: 0; clip-path: inset(-120px 0 -10px 0); }
 .cat {
   position: absolute; left: 0; bottom: 2px; width: 88px; height: 66px;
   transform: translateX(var(--x, -999px));
   transition: transform var(--dur, 0s) cubic-bezier(.3,.05,.7,.95);
-  cursor: pointer; border: 0; padding: 0; background: transparent;
+  cursor: pointer; border: 0; padding: 0; background: transparent; display: block; line-height: 0;
 }
-.cat svg { width: 100%; height: 100%; overflow: visible; transform: scaleX(var(--dir, 1)); transition: transform .35s ease;
+.cat svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scaleX(var(--dir, 1)); transition: transform .35s ease;
   filter: drop-shadow(0 0 .6px rgba(255,255,255,.55)) drop-shadow(0 0 3px rgba(255,255,255,.08)); }
 .cat .tail  { transform-origin: 48px 60px; transform-box: view-box; animation: tail 4.2s ease-in-out infinite; }
 .cat .head  { transform-origin: 104px 50px; transform-box: view-box; }
@@ -332,7 +333,8 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .cat.bubble-left .cat-bubble { left: auto; right: calc(100% + 4px); }
 
 /* Franja de Viole sobre el vídeo (solo en pantalla completa) */
-.stage-cat { display: none; position: absolute; left: 0; right: 0; bottom: 76px; height: 120px; z-index: 4; pointer-events: none; overflow: hidden; }
+.stage-cat { display: none; position: absolute; left: 0; right: 0; bottom: 14px; height: 120px; z-index: 4; pointer-events: none; clip-path: inset(-200px 0 -40px 0); transition: bottom .25s ease; }
+.stage.show-ctrl .stage-cat { bottom: 78px; }   /* sube cuando aparecen los controles */
 .stage:fullscreen .stage-cat { display: block; }
 .stage.pseudo-fs .stage-cat { display: block; }
 /* Reglas separadas a propósito: si un navegador no entiende un selector de la lista,
@@ -343,9 +345,7 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .stage-cat .cat-bubble { display: none; }
 
 body.no-cat .cat { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  .cat, .cat * { animation: none !important; transition: none !important; }
-}
+body.reduce-motion .cat, body.reduce-motion .cat * { animation: none !important; transition: none !important; }
 
 /* =====================================================================
    6. DIÁLOGOS (<dialog> nativo: ESC, foco y fondo los gestiona el navegador)
@@ -413,6 +413,57 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
   .now { gap: 10px; }
   .dock-info .status-text { display: none; }
 }
+/* ---------- Filtros en una sola fila: Todos · Favoritos · Recientes · categorías ---------- */
+.chips {
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 2px 12px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent);
+          mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent);
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; height: 32px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface-2);
+  color: var(--muted); font-size: 12.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.chip:hover { color: var(--text); border-color: var(--line-2); }
+.chip svg.i { width: 14px; height: 14px; }
+.chip .n { font-size: 11px; opacity: .65; }
+.chip[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.chip[aria-selected="true"] svg.i { fill: currentColor; }
+.chip-sep { flex: none; width: 1px; margin: 7px 2px; background: var(--line-2); }
+
+/* ---------- Controles propios sobre el vídeo ---------- */
+.gesture { position: absolute; inset: 0; z-index: 2; touch-action: manipulation; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+.vctrl {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: center; gap: 6px;
+  padding: 30px 12px 10px; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.75));
+  opacity: 0; pointer-events: none; transition: opacity .2s ease;
+}
+.stage.show-ctrl .vctrl { opacity: 1; pointer-events: auto; }
+.stage.show-ctrl .gesture { cursor: default; }
+.vbtn { width: 42px; height: 42px; flex: none; border: 0; border-radius: 10px; background: transparent; color: #fff; display: grid; place-items: center; }
+.vbtn:hover { background: rgba(255,255,255,.14); }
+.vbtn svg.i { width: 22px; height: 22px; }
+.vbtn.fill svg.i { fill: currentColor; }
+.vvol { width: 90px; flex: none; accent-color: var(--accent); }
+.vseek { flex: 1; min-width: 60px; accent-color: var(--accent); }
+.vtime { flex: none; color: rgba(255,255,255,.85); font: 500 12px ui-monospace, Menlo, monospace; }
+.vlive { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: #fff; font: 600 11px/1 Inter, sans-serif; letter-spacing: .6px; padding: 8px; border-radius: 8px; }
+.vlive i { width: 7px; height: 7px; border-radius: 50%; background: #ef5a5a; }
+.vlive.behind i { background: #8a8a8a; }
+.vspacer { flex: 1; }
+.vctrl.is-live .vseek, .vctrl.is-live .vtime { display: none; }
+.vctrl:not(.is-live) .vlive, .vctrl:not(.is-live) .vspacer { display: none; }
+@media (pointer: coarse) {
+  .chip { height: 40px; padding: 0 16px; font-size: 14px; }
+  .chip svg.i { width: 16px; height: 16px; }
+  .vctrl { padding: 36px 14px 14px; gap: 10px; }
+  .vbtn { width: 52px; height: 52px; }
+  .vbtn svg.i { width: 28px; height: 28px; }
+  .vvol { display: none; }
+  .vlive { font-size: 13px; }
+  .stage.show-ctrl .stage-cat { bottom: 92px; }
+}
+
 /* Etiqueta de la versión de prueba */
 .beta-tag { display: none; margin-left: 2px; padding: 1px 6px; border-radius: 6px; font: 600 10px/1.4 Inter, sans-serif; letter-spacing: .5px; text-transform: uppercase; vertical-align: 2px; color: var(--accent-ink); background: var(--accent); }
 body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
@@ -502,6 +553,7 @@ body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></symbol>
   <symbol id="i-max" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="i-min" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></symbol>
   <symbol id="i-pip" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
   <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
@@ -546,7 +598,7 @@ body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
 
   <!-- ============================ SIDEBAR ============================ -->
   <aside class="side" id="side">
-    <details class="lists" id="listsBox" open>
+    <details class="lists" id="listsBox">
       <summary>Mis listas <span class="count" id="listsCount">0</span><svg class="i chev" style="width:16px;height:16px"><use href="#i-chev"/></svg></summary>
       <div class="lists-body" id="lists"></div>
     </details>
@@ -558,12 +610,7 @@ body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
         <input class="field" id="q" type="search" placeholder="Buscar canal, grupo o lista  ( / )" autocomplete="off" spellcheck="false">
         <button class="btn icon ghost clear hidden" id="qClear" aria-label="Borrar búsqueda"><svg class="i" style="width:16px;height:16px"><use href="#i-x"/></svg></button>
       </label>
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-tab="all">Todos</button>
-        <button class="tab" role="tab" data-tab="fav"><svg class="i" style="width:13px;height:13px"><use href="#i-heart"/></svg> Favoritos <span class="n" id="nFav">0</span></button>
-        <button class="tab" role="tab" data-tab="recent">Recientes</button>
-      </div>
-      <select class="field" id="group" aria-label="Categoría"></select>
+      <div class="chips" id="chips" role="tablist" aria-label="Filtrar canales"></div>
     </div>
 
     <div class="channels" id="channels"></div>
@@ -596,8 +643,19 @@ body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
     </div>
 
     <div class="stage" id="stage">
-      <video id="video" playsinline webkit-playsinline preload="none" controls controlslist="nofullscreen"></video>
+      <video id="video" playsinline webkit-playsinline preload="none"></video>
+      <div class="gesture" id="gesture" aria-hidden="true"></div>
       <div class="stage-cat" id="stageCatTrack"></div>
+      <div class="vctrl" id="vctrl">
+        <button class="vbtn fill" id="vPlay" aria-label="Reproducir"><svg class="i"><use href="#i-play"/></svg></button>
+        <button class="vbtn" id="vMute" aria-label="Silenciar"><svg class="i"><use href="#i-vol"/></svg></button>
+        <input class="vvol" id="vVol" type="range" min="0" max="1" step="0.05" aria-label="Volumen">
+        <button class="vlive" id="vLive" title="Ir al momento actual"><i></i>EN VIVO</button>
+        <span class="vtime" id="vTime"></span>
+        <input class="vseek" id="vSeek" type="range" min="0" max="1000" value="0" aria-label="Posición">
+        <span class="vspacer"></span>
+        <button class="vbtn" id="vFs" aria-label="Pantalla completa"><svg class="i"><use href="#i-max"/></svg></button>
+      </div>
 
       <div class="overlay empty-stage" id="emptyStage">
         <div>
@@ -730,6 +788,7 @@ body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
     <div class="grp">
       <span class="grp-label">Viole</span>
       <div class="switch-row"><span>Viole pasea (y se asoma en pantalla completa)</span><span class="switch"><input type="checkbox" id="catToggle" aria-label="Mostrar a Viole"></span></div>
+      <div class="switch-row hidden" id="motionRow"><span>Este dispositivo tiene las animaciones reducidas. ¿Que Viole camine igual?</span><span class="switch"><input type="checkbox" id="motionToggle" aria-label="Animar a Viole igualmente"></span></div>
     </div>
     <div class="grp">
       <span class="grp-label">Copia de seguridad</span>
@@ -773,7 +832,8 @@ if (IS_BETA) { document.body.classList.add('is-beta'); document.title = 'Viole I
 /* ---------- 1. UTILIDADES ---------- */
 const $ = (s) => document.querySelector(s);
 const IS_ANDROID = /Android/i.test(navigator.userAgent);
-const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+let REDUCED_MOTION = mqReduce.matches;   // se ajusta con el ajuste «que camine igual»
 
 function h(tag, attrs = {}, ...children) {
   // Crea elementos con textContent: nunca se interpreta HTML que venga de una lista M3U.
@@ -990,7 +1050,7 @@ function zap(step) {
 function renderStats() {
   const active = state.playlists.filter((p) => p.enabled).length;
   $('#listsCount').textContent = state.playlists.length;
-  $('#nFav').textContent = state.favorites.size;
+  const nf = $('#nFav'); if (nf) nf.textContent = state.favorites.size;
 }
 
 function renderLists() {
@@ -1020,20 +1080,28 @@ function renderLists() {
   }
 }
 
-function renderGroups() {
-  const sel = $('#group');
+// Una sola fila de filtros: Todos · Favoritos · Recientes | categorías de las listas.
+function chipKey() { return state.settings.group !== 'ALL' ? 'g:' + state.settings.group : state.settings.tab; }
+function renderChips() {
+  const box = $('#chips');
   const counts = new Map();
   for (const c of state.channels) counts.set(c.group, (counts.get(c.group) || 0) + 1);
-  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'es'));
   if (state.settings.group !== 'ALL' && !counts.has(state.settings.group)) state.settings.group = 'ALL';
-  sel.replaceChildren(h('option', { value: 'ALL', text: `Todas las categorías (${groups.length})` }),
-    ...groups.map((g) => h('option', { value: g, text: `${g}  ·  ${counts.get(g)}` })));
-  sel.value = state.settings.group;
+  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'es'));
+  const active = chipKey();
+  const chip = (key, ...kids) => h('button', { class: 'chip', role: 'tab', 'data-key': key, 'aria-selected': String(key === active) }, ...kids);
+  box.replaceChildren(
+    chip('all', 'Todos'),
+    chip('fav', icon('i-heart'), 'Favoritos', h('span', { class: 'n', id: 'nFav', text: String(state.favorites.size) })),
+    chip('recent', 'Recientes'),
+    ...(groups.length ? [h('span', { class: 'chip-sep', 'aria-hidden': 'true' })] : []),
+    ...groups.map((g) => chip('g:' + g, g, h('span', { class: 'n', text: String(counts.get(g)) })))
+  );
+  const act = box.querySelector('[aria-selected="true"]');
+  if (act && act.dataset.key.startsWith('g:')) box.scrollLeft = act.offsetLeft - 60;
 }
-
-function renderTabs() {
-  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === state.settings.tab)));
-}
+function renderGroups() { renderChips(); }
+function renderTabs() { renderChips(); }
 
 function logoNode(ch, cls = 'logo') {
   const box = h('div', { class: cls, text: initials(ch.name) });
@@ -1220,6 +1288,7 @@ function teardown() {
   try { video.load(); } catch {}
   $('#qualityRow').classList.add('hidden');
   $('#res').textContent = '';
+  $('#stage').classList.remove('show-ctrl');
 }
 
 function playChannel(ch, opts = {}) {
@@ -1241,6 +1310,7 @@ function startStream(url, { native = false } = {}) {
   Engine.url = url;
   Engine.mediaRetries = 0;
   Engine.hadPlayback = false;
+  Engine.live = null;
   $('#error').classList.add('hidden');
   $('#btnUnmute').classList.add('hidden');
   showLoading(true);
@@ -1273,6 +1343,11 @@ function startHls(url, token) {
     if (token !== Engine.token) return;
     setupQuality(data.levels);
     tryPlay(token);
+  });
+  hls.on(Hls.Events.LEVEL_LOADED, (_e, data) => {
+    if (token !== Engine.token) return;
+    Engine.live = !!(data.details && data.details.live);
+    updateTimeUI();
   });
   hls.on(Hls.Events.LEVEL_SWITCHED, (_e, data) => {
     if (token !== Engine.token) return;
@@ -1361,6 +1436,10 @@ function syncMediaButtons() {
   mute.title = video.muted ? 'Activar sonido (M)' : 'Silenciar (M)';
   mute.setAttribute('aria-label', video.muted ? 'Activar sonido' : 'Silenciar');
   mute.classList.toggle('is-off', video.muted);
+  setBtnIcon($('#vPlay'), paused ? 'i-play' : 'i-pause');
+  $('#vPlay').setAttribute('aria-label', paused ? 'Reproducir' : 'Pausar');
+  setBtnIcon($('#vMute'), video.muted ? 'i-mute' : 'i-vol');
+  $('#vVol').value = video.muted ? 0 : video.volume;
 }
 function togglePlay() {
   if (!state.current) { toast('Primero elige un canal'); return; }
@@ -1442,30 +1521,79 @@ function isFullscreen() { return !!(document.fullscreenElement || document.webki
 let fsExiting = false;
 document.addEventListener('fullscreenchange', () => {
   const el = document.fullscreenElement;
+  syncFsIcon();
   if (!el) { fsExiting = false; return; }
   if (el === video) {
     if (fsExiting) { document.exitFullscreen().catch(() => {}); return; }
     stage.requestFullscreen().catch(() => {});
   }
 });
-// Doble toque (tablet) o doble clic (ordenador) sobre el vídeo: entra o sale de pantalla completa.
-// Algunos navegadores lanzan las dos señales con un mismo doble toque: se ignora la segunda.
-let fsGestureAt = 0, lastTap = { t: 0, x: 0, y: 0 };
-function fsFromGesture(e) {
-  if (e.target.closest('.overlay, button, .menu')) return;          // ni el juego ni los botones
-  const now = performance.now();
-  if (now - fsGestureAt < 450) return;
-  fsGestureAt = now;
-  toggleFullscreen();
+/* ---------- Controles propios sobre el vídeo ----------
+   No usamos los del navegador: Firefox se quedaba con los toques y no dejaba
+   hacer doble toque ni mostrar a Viole en pantalla completa.
+   - Tablet: un toque muestra u oculta los controles; doble toque, pantalla completa.
+   - Ratón:  clic pausa o reanuda; doble clic, pantalla completa; al moverlo aparecen los controles. */
+let ctrlTimer = 0, tapAt = 0, tapTimer = 0;
+function showControls(ms = 3200) {
+  if (!Engine.mode) return;
+  stage.classList.add('show-ctrl');
+  clearTimeout(ctrlTimer);
+  if (!video.paused) ctrlTimer = setTimeout(() => hideControls(), ms);
 }
-stage.addEventListener('pointerup', (e) => {
-  if (e.pointerType === 'mouse') return;                            // con ratón se usa dblclick
+function hideControls(force) {
+  if (!force && video.paused && Engine.mode) return;        // en pausa se quedan a la vista
+  clearTimeout(ctrlTimer);
+  stage.classList.remove('show-ctrl');
+}
+$('#gesture').addEventListener('click', (e) => {
   const now = performance.now();
-  if (now - lastTap.t < 330 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 45) {
-    lastTap.t = 0; fsFromGesture(e);
-  } else lastTap = { t: now, x: e.clientX, y: e.clientY };
+  if (now - tapAt < 350) { clearTimeout(tapTimer); tapAt = 0; toggleFullscreen(); return; }   // doble toque / doble clic
+  tapAt = now;
+  const mouse = e.pointerType ? e.pointerType === 'mouse' : !mqTouch.matches;
+  tapTimer = setTimeout(() => {
+    if (mouse) { togglePlay(); showControls(); }
+    else if (stage.classList.contains('show-ctrl')) hideControls(true);
+    else showControls();
+  }, 350);
 });
-stage.addEventListener('dblclick', (e) => { e.preventDefault(); fsFromGesture(e); });
+// Solo ratón real: en tablets, cada toque genera también un «mousemove» falso que deshacía el toque
+stage.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') showControls(2500); });
+$('#vctrl').addEventListener('pointerdown', () => showControls());   // mientras se usan, no se esconden
+$('#vPlay').addEventListener('click', togglePlay);
+$('#vMute').addEventListener('click', toggleMute);
+$('#vFs').addEventListener('click', () => toggleFullscreen());
+$('#vVol').addEventListener('input', (e) => {
+  video.volume = Number(e.target.value);
+  if (video.muted && video.volume > 0) toggleMute();
+});
+$('#vLive').addEventListener('click', () => {
+  const live = Engine.hls && Engine.hls.liveSyncPosition;
+  if (live) video.currentTime = live;
+  video.play().catch(() => {});
+});
+$('#vSeek').addEventListener('input', (e) => { if (isFinite(video.duration)) video.currentTime = video.duration * Number(e.target.value) / 1000; });
+video.addEventListener('play', () => showControls());
+video.addEventListener('pause', () => showControls());
+video.addEventListener('timeupdate', updateTimeUI);
+video.addEventListener('durationchange', updateTimeUI);
+function fmtTime(t) {
+  t = Math.max(0, Math.floor(t || 0));
+  const hh = Math.floor(t / 3600), mm = Math.floor((t % 3600) / 60), ss = t % 60;
+  return (hh ? hh + ':' + String(mm).padStart(2, '0') : mm) + ':' + String(ss).padStart(2, '0');
+}
+function updateTimeUI() {
+  const live = Engine.mode === 'hls' ? Engine.live !== false : !isFinite(video.duration);
+  $('#vctrl').classList.toggle('is-live', live);
+  if (live) {
+    const edge = Engine.hls && Engine.hls.liveSyncPosition;
+    $('#vLive').classList.toggle('behind', !!(edge && video.currentTime < edge - 12));
+  } else if (isFinite(video.duration) && video.duration > 0) {
+    $('#vTime').textContent = fmtTime(video.currentTime) + ' / ' + fmtTime(video.duration);
+    $('#vSeek').value = Math.round((video.currentTime / video.duration) * 1000);
+  }
+}
+function syncFsIcon() { setBtnIcon($('#vFs'), isFullscreen() ? 'i-min' : 'i-max'); }
+new MutationObserver(syncFsIcon).observe(stage, { attributes: true, attributeFilter: ['class'] });
 
 async function toggleFullscreen() {
   if (stage.classList.contains('pseudo-fs')) { stage.classList.remove('pseudo-fs'); return; }
@@ -1865,10 +1993,18 @@ $('#listsBox').addEventListener('toggle', () => { state.settings.listsOpen = $('
 
 $('#q').addEventListener('input', applyFilters);
 $('#qClear').addEventListener('click', () => { $('#q').value = ''; applyFilters(); $('#q').focus(); });
-$('#group').addEventListener('change', (e) => { state.settings.group = e.target.value; saveSettings(); applyFilters(); });
-document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
-  state.settings.tab = t.dataset.tab; saveSettings(); renderTabs(); applyFilters();
-}));
+$('#chips').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  const k = b.dataset.key;
+  if (k.startsWith('g:')) { state.settings.tab = 'all'; state.settings.group = k.slice(2); }
+  else { state.settings.tab = k; state.settings.group = 'ALL'; }
+  saveSettings(); renderChips(); applyFilters();
+});
+// Con ratón, la rueda desplaza la fila de categorías hacia los lados
+$('#chips').addEventListener('wheel', (e) => {
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { $('#chips').scrollLeft += e.deltaY; e.preventDefault(); }
+}, { passive: false });
 
 $('#btnPrev').addEventListener('click', () => zap(-1));
 $('#btnNext').addEventListener('click', () => zap(1));
@@ -1944,6 +2080,13 @@ $('#skinSeg').addEventListener('click', (e) => {
   state.settings.skin = b.dataset.skin; saveSettings(); applySkin();
 });
 $('#catToggle').addEventListener('change', (e) => { state.settings.cat = e.target.checked; saveSettings(); applyCatSetting(); });
+function updateMotion() {
+  REDUCED_MOTION = mqReduce.matches && !state.settings.forceMotion;
+  document.body.classList.toggle('reduce-motion', REDUCED_MOTION);
+  $('#motionRow').classList.toggle('hidden', !mqReduce.matches);   // solo se ofrece si el sistema reduce animaciones
+  $('#motionToggle').checked = !!state.settings.forceMotion;
+}
+$('#motionToggle').addEventListener('change', (e) => { state.settings.forceMotion = e.target.checked; saveSettings(); updateMotion(); catRun(); });
 $('#btnSettings').addEventListener('click', async () => {
   $('#kvLists').textContent = `${state.playlists.length} · ${DB.available ? 'guardadas' : 'solo en esta sesión'}`;
   $('#kvDevice').textContent = deviceSummary();
@@ -2033,7 +2176,7 @@ async function addDemos() {
 async function boot() {
   applySkin();
   document.body.classList.toggle('side-collapsed', state.settings.sideCollapsed);
-  $('#listsBox').open = state.settings.listsOpen;
+  $('#listsBox').open = false;   // las listas siempre empiezan cerradas
 
   const ok = await DB.open();
   if (ok) {
@@ -2061,6 +2204,7 @@ async function boot() {
     if (window.Hls) go(); else window.addEventListener('load', go, { once: true });
   }
 
+  updateMotion();
   syncMediaButtons();
   applyCatSetting();
   if (state.settings.cat) setTimeout(() => catSay('Miau 🐾'), 1200);
