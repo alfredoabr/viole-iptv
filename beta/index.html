@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="referrer" content="no-referrer">
+<title>Viole IPTV</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="../icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- hls.js va incluido en el repo (versión fija). Si el CDN cambia, la app no se rompe. -->
+<script src="../vendor/hls-1.7.4.min.js" defer></script>
+
+<style>
+/* =====================================================================
+   1. TOKENS DE DISEÑO
+   Todo el color sale de estas variables. Cambiar de skin = cambiar
+   el atributo data-skin del <body>. Nada más.
+   ===================================================================== */
+:root, body[data-skin="viole"] {
+  --bg:        #0b0b0d;   /* negro de la mancha de Viole */
+  --surface:   #131316;
+  --surface-2: #1b1b1f;
+  --surface-3: #25252a;
+  --line:      rgba(255,255,255,.08);
+  --line-2:    rgba(255,255,255,.14);
+  --text:      #f3f1ec;   /* blanco cálido del pelaje */
+  --muted:     #9b9aa0;
+  --faint:     #6c6b72;
+  --accent:    #f2c14e;   /* el ojo amarillo de Viole: el único color */
+  --accent-ink:#17150f;
+  --accent-soft: rgba(242,193,78,.12);
+  --danger:    #ef8080;
+  --ok:        #86d3aa;
+  --fur:       #f3f1ec;
+  --patch:     #101014;
+  --radius:    12px;
+}
+body[data-skin="halloween"] {
+  --bg:        #0d0a12;
+  --surface:   #15101e;
+  --surface-2: #1e172b;
+  --surface-3: #2a2040;
+  --line:      rgba(178,140,255,.12);
+  --line-2:    rgba(178,140,255,.22);
+  --text:      #f4effb;
+  --muted:     #a99ec0;
+  --faint:     #786d8f;
+  --accent:    #ff8a2a;
+  --accent-ink:#1b0e02;
+  --accent-soft: rgba(255,138,42,.13);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  height: 100dvh;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.hidden { display: none !important; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; border: 2px solid var(--surface); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Botones base ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--surface-2);
+  transition: background .15s, border-color .15s, color .15s, transform .1s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--surface-3); border-color: var(--line-2); }
+.btn:active { transform: scale(.97); }
+.btn:focus-visible, .field:focus-visible, .row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.icon { width: 36px; padding: 0; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.is-on { color: var(--accent); }
+.btn.is-on svg.i { fill: currentColor; }
+
+.field {
+  width: 100%; height: 38px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  color-scheme: dark; outline: none;
+}
+.field:focus { border-color: var(--accent); }
+textarea.field { height: auto; padding: 10px 12px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; }
+.field::placeholder { color: var(--faint); }
+
+/* =====================================================================
+   2. CABECERA
+   ===================================================================== */
+.top {
+  display: flex; align-items: center; gap: 10px;
+  height: 56px; padding: 0 12px;
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-mark { width: 34px; height: 34px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
+.brand-mark svg { width: 26px; height: 26px; }
+.brand-name { font-family: Fredoka, Inter, sans-serif; font-weight: 600; font-size: 17px; letter-spacing: .3px; line-height: 1; }
+.brand-name b { color: var(--accent); font-weight: 600; }
+.brand-sub { color: var(--muted); font-size: 11.5px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top .spacer { flex: 1; }
+
+/* =====================================================================
+   3. CUERPO: SIDEBAR + ZONA DE VÍDEO
+   ===================================================================== */
+.body { display: flex; min-height: 0; position: relative; }
+
+.side {
+  width: 340px; flex: none; display: flex; flex-direction: column; min-height: 0;
+  background: var(--surface); border-right: 1px solid var(--line);
+}
+body.side-collapsed .side { display: none; }
+
+/* Mis listas (plegable con <details>, recuerda si estaba abierto) */
+.lists { border-bottom: 1px solid var(--line); }
+.lists > summary {
+  list-style: none; display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; cursor: pointer; color: var(--muted);
+  font-size: 11.5px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase;
+}
+.lists > summary::-webkit-details-marker { display: none; }
+.lists > summary .count { margin-left: auto; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.lists > summary .chev { transition: transform .2s; }
+.lists[open] > summary .chev { transform: rotate(180deg); }
+.lists-body { padding: 0 10px 10px; max-height: 190px; overflow-y: auto; display: grid; gap: 6px; }
+.pl {
+  display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px;
+  border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line);
+}
+.pl.off { opacity: .55; }
+.pl input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); flex: none; margin: 0; }
+.pl-text { min-width: 0; flex: 1; cursor: pointer; }
+.pl-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-meta { font-size: 11px; color: var(--muted); }
+.pl .btn.icon { width: 30px; height: 30px; border-radius: 8px; color: var(--muted); }
+.pl .btn.icon:hover { color: var(--text); }
+.pl .btn.icon.danger:hover { color: var(--danger); }
+.empty-small { color: var(--muted); font-size: 12px; padding: 4px 4px 2px; }
+
+/* Buscador + pestañas + categoría */
+.filters { padding: 12px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); }
+.search { position: relative; }
+.search svg.i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--faint); width: 16px; height: 16px; }
+.search .field { padding-left: 34px; padding-right: 34px; }
+.search .clear { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 8px; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 3px; border-radius: 11px; background: var(--bg); border: 1px solid var(--line); }
+.tab { height: 30px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { background: var(--surface-3); color: var(--text); }
+.tab .n { font-size: 11px; color: var(--faint); }
+.tab[aria-selected="true"] .n { color: var(--accent); }
+select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239b9aa0' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; text-overflow: ellipsis; }
+
+/* Lista de canales */
+.channels { flex: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 12px;
+  border-bottom: 1px solid var(--line); cursor: pointer; position: relative;
+  transition: background .12s;
+}
+.row:hover { background: var(--surface-2); }
+.row.active { background: var(--accent-soft); }
+.row.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.logo {
+  width: 38px; height: 38px; flex: none; border-radius: 9px; background: var(--surface-3);
+  display: grid; place-items: center; overflow: hidden; position: relative;
+  font-family: Fredoka, Inter, sans-serif; font-size: 13px; color: var(--muted); font-weight: 600;
+}
+.logo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 4px; background: var(--surface-3); }
+.row-text { min-width: 0; flex: 1; }
+.row-name { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row.active .row-name { color: var(--accent); }
+.row-meta { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .fav { width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--faint); display: grid; place-items: center; }
+.row .fav:hover { color: var(--text); background: var(--surface-3); }
+.row .fav.is-on { color: var(--accent); }
+.row .fav.is-on svg.i { fill: currentColor; }
+.more-row { padding: 12px; text-align: center; }
+.empty { padding: 36px 20px; text-align: center; color: var(--muted); font-size: 13px; }
+.empty .paw { font-size: 22px; margin-bottom: 8px; opacity: .8; }
+
+.side-foot { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--muted); }
+
+/* =====================================================================
+   4. ZONA PRINCIPAL
+   ===================================================================== */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
+
+.now { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface); min-height: 60px; }
+.now .logo { width: 40px; height: 40px; }
+.now-text { min-width: 0; flex: 1; }
+.now-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.now-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now-meta { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill { flex: none; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--muted); letter-spacing: .2px; }
+.pill.live { color: var(--ok); border-color: rgba(134,211,170,.35); }
+.pill.wait { color: var(--accent); border-color: rgba(242,193,78,.35); }
+.pill.err  { color: var(--danger); border-color: rgba(239,128,128,.35); }
+.now-actions { display: flex; gap: 6px; flex: none; }
+
+/* Menús desplegables (⋯) */
+.menu-wrap { position: relative; }
+.menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 240px;
+  background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px;
+  padding: 6px; box-shadow: 0 18px 40px rgba(0,0,0,.45);
+}
+.menu-label { font-size: 10.5px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--faint); padding: 8px 10px 4px; }
+.menu-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 0; border-radius: 9px; background: transparent; text-align: left; font-size: 13px; }
+.menu-item:hover { background: var(--surface-2); }
+.menu-item svg.i { color: var(--muted); }
+.menu-item.hidden { display: none; }
+.menu-quality { display: flex; align-items: center; gap: 10px; padding: 6px 10px; font-size: 13px; }
+.menu-quality select { flex: 1; height: 32px; }
+
+/* Escenario de vídeo */
+.stage { flex: 1; min-height: 0; position: relative; background: #000; display: grid; place-items: center; overflow: hidden; }
+.stage video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+.stage.pseudo-fs { position: fixed; inset: 0; z-index: 100; }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; z-index: 5; }
+.loading { background: rgba(0,0,0,.45); pointer-events: none; }
+.spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(255,255,255,.12); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading p { margin: 14px 0 0; text-align: center; color: var(--muted); font-size: 13px; font-family: Fredoka, Inter, sans-serif; }
+
+/* Sin señal: solo el juego, fundido con el fondo. El "por qué" queda tras los tres puntos. */
+.error { background: var(--bg); overflow-y: auto; padding: 16px; }
+.game { width: min(760px, 100%); display: flex; flex-direction: column; align-items: center; }
+.game canvas {
+  width: 100%; height: 190px; display: block; cursor: pointer; touch-action: manipulation;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.more-dots {
+  margin-top: 2px; width: 44px; height: 28px; border: 0; border-radius: 99px; background: transparent;
+  color: var(--faint); display: grid; place-items: center; opacity: .55; transition: opacity .2s, background .2s, color .2s;
+}
+.more-dots:hover, .more-dots[aria-expanded="true"] { opacity: 1; color: var(--muted); background: var(--surface-2); }
+.err-info { text-align: center; margin-top: 10px; max-width: 460px; animation: fade-up .22s ease; }
+.err-info h3 { margin: 0 0 4px; font: 600 16px/1.3 Fredoka, Inter, sans-serif; }
+.err-info p { margin: 0 auto 12px; color: var(--muted); font-size: 13px; }
+.error-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.empty-stage { color: var(--muted); text-align: center; padding: 20px; }
+.empty-stage h3 { color: var(--text); font-family: Fredoka, Inter, sans-serif; font-weight: 600; margin: 10px 0 6px; }
+
+.unmute { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6; }
+
+/* =====================================================================
+   5. BARRA INFERIOR (DOCK) + VIOLE
+   Viole vive en la barra. En pantalla completa se muda a una franja
+   encima de los controles del vídeo y no intercepta toques.
+   ===================================================================== */
+.dock {
+  height: 52px; flex: none; display: flex; align-items: center; gap: 10px;
+  padding: 0 12px; padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--line); background: var(--surface);
+}
+.dock .zap { display: flex; gap: 6px; flex: none; }
+.zap .btn { width: 40px; height: 36px; padding: 0; }
+.zap .btn svg { width: 22px; height: 22px; }
+.dock-info { flex: none; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--muted); }
+.dock-info .res { color: var(--accent); font-weight: 600; }
+
+.cat-track { flex: 1; align-self: stretch; position: relative; min-width: 0; overflow: hidden; }
+.cat {
+  position: absolute; left: 0; bottom: 3px; width: 58px; height: 44px;
+  transform: translateX(var(--x, -999px));
+  transition: transform var(--dur, 0s) cubic-bezier(.3,.05,.7,.95);
+  cursor: pointer; border: 0; padding: 0; background: transparent;
+}
+.cat svg { width: 100%; height: 100%; overflow: visible; transform: scaleX(var(--dir, 1)); transition: transform .35s ease;
+  filter: drop-shadow(0 0 .6px rgba(255,255,255,.55)) drop-shadow(0 0 3px rgba(255,255,255,.08)); }
+.cat .tail  { transform-origin: 48px 60px; transform-box: view-box; animation: tail 4.2s ease-in-out infinite; }
+.cat .head  { transform-origin: 104px 50px; transform-box: view-box; }
+.cat .eye-lid { transform-origin: 112px 37px; transform-box: view-box; transform: scaleY(0); animation: blink 7s infinite; }
+.cat .leg   { transform-box: fill-box; transform-origin: 50% 0; }
+.cat .body-g { transform-origin: 80px 70px; transform-box: view-box; }
+.cat.walking .leg-a  { animation: stepA 1.15s ease-in-out infinite; }
+.cat.walking .leg-b  { animation: stepB 1.15s ease-in-out infinite; }
+.cat.walking .body-g { animation: sway 1.15s ease-in-out infinite; }
+.cat.walking .head   { animation: nod 2.3s ease-in-out infinite; }
+@keyframes tail  { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(7deg); } }
+@keyframes stepA { 0%,100% { transform: rotate(-11deg); } 50% { transform: rotate(12deg); } }
+@keyframes stepB { 0%,100% { transform: rotate(12deg); } 50% { transform: rotate(-11deg); } }
+@keyframes sway  { 0%,100% { transform: translateY(0); } 25%,75% { transform: translateY(-1.2px); } }
+@keyframes nod   { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-2deg); } }
+@keyframes blink { 0%, 95%, 100% { transform: scaleY(0); } 97% { transform: scaleY(1); } }
+.cat-bubble {
+  position: absolute; bottom: 12px; left: calc(100% + 4px);
+  background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text);
+  font: 500 12px/1.3 Fredoka, Inter, sans-serif; padding: 6px 10px; border-radius: 10px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 2;
+}
+.cat-bubble.show { opacity: 1; }
+.cat.bubble-left .cat-bubble { left: auto; right: calc(100% + 4px); }
+
+/* Franja de Viole sobre el vídeo (solo en pantalla completa) */
+.stage-cat { display: none; position: absolute; left: 0; right: 0; bottom: 76px; height: 76px; z-index: 4; pointer-events: none; overflow: hidden; }
+.stage:fullscreen .stage-cat, .stage:-webkit-full-screen .stage-cat, .stage.pseudo-fs .stage-cat { display: block; }
+.stage-cat .cat { width: 100px; height: 76px; bottom: 0; pointer-events: none; cursor: default; }
+.stage-cat .cat svg { filter: drop-shadow(0 0 .7px rgba(255,255,255,.5)) drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
+.stage-cat .cat-bubble { display: none; }
+
+body.no-cat .cat { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .cat, .cat * { animation: none !important; transition: none !important; }
+}
+
+/* =====================================================================
+   6. DIÁLOGOS (<dialog> nativo: ESC, foco y fondo los gestiona el navegador)
+   ===================================================================== */
+dialog {
+  width: min(520px, calc(100vw - 24px)); max-height: calc(100dvh - 32px);
+  padding: 0; border: 1px solid var(--line-2); border-radius: 18px;
+  background: var(--surface); color: var(--text); box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
+.dlg-head { display: flex; align-items: center; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+.dlg-head h2 { margin: 0; font: 600 17px/1.2 Fredoka, Inter, sans-serif; }
+.dlg-head p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.dlg-head .btn { margin-left: auto; }
+.dlg-body { padding: 16px; display: grid; gap: 16px; overflow-y: auto; max-height: calc(100dvh - 120px); }
+.grp { display: grid; gap: 8px; }
+.grp-label { font-size: 11px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); }
+.grp-row { display: flex; gap: 8px; }
+.grp-row .field { flex: 1; min-width: 0; }
+.drop {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; border-radius: 12px;
+  border: 1px dashed var(--line-2); background: var(--surface-2); color: var(--text); font-weight: 500; cursor: pointer;
+}
+.drop:hover { border-color: var(--accent); color: var(--accent); }
+.note { font-size: 12px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.note b { color: var(--text); font-weight: 600; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border-radius: 11px; background: var(--bg); border: 1px solid var(--line); }
+.seg button { height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; }
+.switch { position: relative; width: 42px; height: 24px; flex: none; }
+.switch input { appearance: none; -webkit-appearance: none; margin: 0; width: 42px; height: 24px; border-radius: 99px; background: var(--surface-3); border: 1px solid var(--line-2); cursor: pointer; transition: background .2s; }
+.switch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--text); transition: transform .2s; }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(18px); background: var(--accent-ink); }
+.kv { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); }
+.kv b { color: var(--text); font-weight: 500; }
+
+/* Toast */
+.toast {
+  position: fixed; right: 16px; bottom: 68px; z-index: 200; max-width: min(380px, calc(100vw - 32px));
+  background: var(--surface-2); border: 1px solid var(--line-2); border-left: 3px solid var(--accent);
+  padding: 10px 14px; border-radius: 12px; font-size: 13px; box-shadow: 0 12px 30px rgba(0,0,0,.45);
+  opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: none; }
+.toast.err { border-left-color: var(--danger); }
+
+/* =====================================================================
+   7. TABLET / MÓVIL: el panel de canales pasa a ser un cajón lateral
+   ===================================================================== */
+.scrim { display: none; }
+@media (max-width: 899px) {
+  .side { position: absolute; inset: 0 auto 0 0; z-index: 30; width: min(360px, 88vw); transform: translateX(-102%); transition: transform .25s ease; box-shadow: 20px 0 50px rgba(0,0,0,.5); }
+  body.side-open .side { transform: none; }
+  body.side-collapsed .side { display: flex; }
+  .scrim { display: block; position: absolute; inset: 0; z-index: 25; background: rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  body.side-open .scrim { opacity: 1; pointer-events: auto; }
+}
+@media (max-width: 560px) {
+  .brand-sub, .hide-sm { display: none; }
+  .now { gap: 10px; }
+  .dock-info .status-text { display: none; }
+}
+/* Etiqueta de la versión de prueba */
+.beta-tag { display: none; margin-left: 6px; padding: 1px 6px; border-radius: 6px; font: 600 10px/1.4 Inter, sans-serif; letter-spacing: .5px; text-transform: uppercase; vertical-align: 2px; color: var(--accent-ink); background: var(--accent); }
+body.is-beta .beta-tag { display: inline-block; }
+
+/* =====================================================================
+   8. PANTALLAS TÁCTILES (Xiaomi Pad 6): todo se toca con el dedo, mínimo ~44 px
+   ===================================================================== */
+@media (pointer: coarse) {
+  .top { height: 62px; }
+  .btn { height: 44px; padding: 0 14px; border-radius: 12px; }
+  .btn.icon { width: 44px; }
+  .field { height: 44px; font-size: 15px; }
+  .search .clear { width: 38px; height: 38px; }
+  .tabs { padding: 4px; }
+  .tab { height: 38px; font-size: 13.5px; }
+  .lists > summary { padding: 14px; }
+  .pl { padding: 8px 6px 8px 12px; }
+  .pl input[type=checkbox] { width: 20px; height: 20px; }
+  .pl .btn.icon { width: 42px; height: 42px; }
+  .row { min-height: 62px; padding: 9px 8px 9px 14px; gap: 12px; }
+  .logo { width: 44px; height: 44px; border-radius: 10px; }
+  .row-name { font-size: 15px; }
+  .row-meta { font-size: 12.5px; }
+  .row .fav { width: 44px; height: 44px; border-radius: 10px; }
+  .row .fav svg.i { width: 20px; height: 20px; }
+  .now { min-height: 68px; }
+  .now-actions { gap: 8px; }
+  .menu { min-width: 280px; }
+  .menu-item { padding: 13px 12px; font-size: 14.5px; }
+  .menu-quality select { height: 40px; }
+  .dock { height: 66px; gap: 12px; }
+  .dock .zap { gap: 8px; }
+  .zap .btn { width: 58px; height: 48px; border-radius: 14px; }
+  .zap .btn svg { width: 26px; height: 26px; }
+  .cat { width: 72px; height: 54px; bottom: 4px; }
+  .seg button { height: 42px; }
+  .more-dots { width: 56px; height: 36px; }
+  .game canvas { height: 210px; }
+}
+
+/* =====================================================================
+   9. VERTICAL: vídeo arriba (16:9), Viole en la barra, canales debajo.
+   Como YouTube en el móvil. El panel deja de ser un cajón.
+   ===================================================================== */
+@media (orientation: portrait) and (max-width: 1100px) {
+  .body { flex-direction: column; }
+  .main { order: 1; flex: none; }
+  .stage { flex: none; aspect-ratio: 16 / 9; }
+  .side {
+    order: 2; display: flex !important; position: static; inset: auto; z-index: auto;
+    width: auto; flex: 1; min-height: 0; transform: none; transition: none; box-shadow: none;
+    border-right: 0; border-top: 1px solid var(--line);
+  }
+  #btnSide, .scrim { display: none; }
+  .lists-body { max-height: 160px; }
+}
+</style>
+</head>
+
+<body data-skin="viole">
+
+<!-- Iconos (dibujados una vez, reutilizados con <use>) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-max" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="i-pip" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6m0-6 6 6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8Z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
+  <!-- Cara de Viole: blanca, mancha negra sobre el ojo y una oreja, ojo amarillo -->
+  <symbol id="viole-head" viewBox="0 0 64 64">
+    <polygon points="34,22 40,7 47,22" fill="#f3f1ec" stroke="#101014" stroke-width="2.5" stroke-linejoin="round"/>
+    <polygon points="18,24 25,6 37,22" fill="#101014"/>
+    <path d="M14,38 C14,22 26,18 38,18 C49,18 54,27 54,37 C54,46 44,50 32,50 C20,50 14,45 14,38 Z" fill="#f3f1ec" stroke="#101014" stroke-width="2.5"/>
+    <path d="M15,35 C15,21 26,18 41,18 C43,27 42,36 33,39 C23,41 16,39 15,35 Z" fill="#101014"/>
+    <path d="M27,27 Q36,26 42,32 Q35,37 28,33 Z" fill="#f2c14e" stroke="#101014" stroke-width="1.8"/>
+    <line x1="36" y1="27.8" x2="36" y2="34.2" stroke="#101014" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M47,38 Q50,41 52,37" fill="none" stroke="#101014" stroke-width="2" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<!-- ============================ CABECERA ============================ -->
+<header class="top">
+  <button class="btn icon ghost" id="btnSide" title="Mostrar u ocultar canales" aria-label="Mostrar u ocultar canales">
+    <svg class="i"><use href="#i-panel"/></svg>
+  </button>
+  <div class="brand">
+    <div class="brand-mark"><svg><use href="#viole-head"/></svg></div>
+    <div style="min-width:0">
+      <div class="brand-name">Viole <b>IPTV</b><span class="beta-tag">beta</span></div>
+      <div class="brand-sub" id="stats">Cargando…</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn primary" id="btnAdd"><svg class="i"><use href="#i-plus"/></svg><span class="hide-sm">Añadir lista</span></button>
+  <button class="btn icon" id="btnSettings" title="Ajustes" aria-label="Ajustes"><svg class="i"><use href="#i-gear"/></svg></button>
+</header>
+
+<div class="body">
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ============================ SIDEBAR ============================ -->
+  <aside class="side" id="side">
+    <details class="lists" id="listsBox" open>
+      <summary>Mis listas <span class="count" id="listsCount">0</span><svg class="i chev" style="width:16px;height:16px"><use href="#i-chev"/></svg></summary>
+      <div class="lists-body" id="lists"></div>
+    </details>
+
+    <div class="filters">
+      <label class="search">
+        <span class="sr">Buscar canal</span>
+        <svg class="i"><use href="#i-search"/></svg>
+        <input class="field" id="q" type="search" placeholder="Buscar canal, grupo o lista  ( / )" autocomplete="off" spellcheck="false">
+        <button class="btn icon ghost clear hidden" id="qClear" aria-label="Borrar búsqueda"><svg class="i" style="width:16px;height:16px"><use href="#i-x"/></svg></button>
+      </label>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="all">Todos</button>
+        <button class="tab" role="tab" data-tab="fav"><svg class="i" style="width:13px;height:13px"><use href="#i-heart"/></svg> Favoritos <span class="n" id="nFav">0</span></button>
+        <button class="tab" role="tab" data-tab="recent">Recientes</button>
+      </div>
+      <select class="field" id="group" aria-label="Categoría"></select>
+    </div>
+
+    <div class="channels" id="channels"></div>
+    <div class="side-foot"><span id="shown">0 canales</span><span id="storageNote"></span></div>
+  </aside>
+
+  <!-- ============================ PRINCIPAL ============================ -->
+  <main class="main">
+    <div class="now">
+      <div class="logo" id="nowLogo"><svg style="width:28px;height:28px"><use href="#viole-head"/></svg></div>
+      <div class="now-text">
+        <div class="now-title"><span class="now-name" id="nowName">Elige un canal</span><span class="pill hidden" id="pill"></span></div>
+        <div class="now-meta" id="nowMeta">Tus listas y favoritos se guardan en este dispositivo</div>
+      </div>
+      <div class="now-actions">
+        <button class="btn icon" id="btnFav" title="Favorito (S)" aria-label="Favorito"><svg class="i"><use href="#i-heart"/></svg></button>
+        <div class="menu-wrap">
+          <button class="btn icon" id="btnTools" title="Más opciones" aria-label="Más opciones"><svg class="i"><use href="#i-dots"/></svg></button>
+          <div class="menu hidden" id="menuTools">
+            <div class="menu-quality hidden" id="qualityRow"><span>Calidad</span><select class="field" id="quality"></select></div>
+            <button class="menu-item" data-act="retry"><svg class="i"><use href="#i-refresh"/></svg>Reconectar <span style="margin-left:auto;color:var(--faint)">R</span></button>
+            <button class="menu-item" data-act="pip"><svg class="i"><use href="#i-pip"/></svg>Ventana flotante</button>
+            <button class="menu-item" data-act="native"><svg class="i"><use href="#i-play"/></svg>Probar reproductor del sistema</button>
+            <button class="menu-item" data-act="copy"><svg class="i"><use href="#i-copy"/></svg>Copiar enlace (para VLC / mpv)</button>
+            <button class="menu-item android-only" data-act="external"><svg class="i"><use href="#i-ext"/></svg>Abrir en otra app</button>
+          </div>
+        </div>
+        <button class="btn icon" id="btnFs" title="Pantalla completa (F)" aria-label="Pantalla completa"><svg class="i"><use href="#i-max"/></svg></button>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <video id="video" playsinline webkit-playsinline preload="none" controls controlslist="nofullscreen"></video>
+      <div class="stage-cat" id="stageCatTrack"></div>
+
+      <div class="overlay empty-stage" id="emptyStage">
+        <div>
+          <svg style="width:56px;height:56px"><use href="#viole-head"/></svg>
+          <h3>Nada sintonizado todavía</h3>
+          <div>Añade una lista M3U o elige un canal del panel.</div>
+        </div>
+      </div>
+
+      <div class="overlay loading hidden" id="loading">
+        <div style="display:grid;place-items:center"><div class="spinner"></div><p>Viole está sintonizando…</p></div>
+      </div>
+
+      <button class="btn primary unmute hidden" id="btnUnmute"><svg class="i"><use href="#i-mute"/></svg>Activar sonido</button>
+
+      <div class="overlay error hidden" id="error">
+        <div class="game">
+          <canvas id="runner" aria-label="Minijuego: Viole salta ovillos mientras vuelve la señal"></canvas>
+          <button class="more-dots" id="errMore" aria-expanded="false" aria-controls="errInfo" title="¿Por qué no carga?" aria-label="Ver por qué no carga el canal"><svg class="i"><use href="#i-dots"/></svg></button>
+          <div class="err-info" id="errInfo" hidden>
+            <h3 id="errTitle">Sin señal</h3>
+            <p id="errText"></p>
+            <div class="error-actions" id="errActions"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock">
+      <div class="zap">
+        <button class="btn" id="btnPrev" title="Canal anterior (↑)" aria-label="Canal anterior">
+          <svg viewBox="0 0 28 28"><polygon points="7,12 9,5 13,10" fill="currentColor" opacity=".85"/><polygon points="21,12 19,5 15,10" fill="currentColor" opacity=".85"/><path d="M6,19 L14,11 L22,19" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="btn" id="btnNext" title="Canal siguiente (↓)" aria-label="Canal siguiente">
+          <svg viewBox="0 0 28 28"><polygon points="7,12 9,6 13,11" fill="currentColor" opacity=".85"/><polygon points="21,12 19,6 15,11" fill="currentColor" opacity=".85"/><path d="M6,13 L14,21 L22,13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Pista por la que pasea Viole -->
+      <div class="cat-track" id="catTrack">
+        <button class="cat" id="cat" aria-label="Viole">
+          <span class="cat-bubble" id="catBubble"></span>
+          <svg viewBox="28 6 106 106" aria-hidden="true">
+            <g class="body-g">
+              <g class="tail">
+                <path d="M46,62 C34,42 29,20 35,10 C39,4 46,8 46,17 C45,29 50,45 55,58 Z" fill="var(--fur)" stroke="var(--patch)" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M38,18 C36,27 40,38 45,42 C46,34 44,23 38,18 Z" fill="var(--patch)"/>
+              </g>
+              <g class="leg leg-b"><path d="M48,72 L40,94 L37,107 L45,107 L47,95 L57,76 Z" fill="var(--fur)" stroke="var(--patch)" stroke-width="2.8" stroke-linejoin="round"/></g>
+              <g class="leg leg-b"><path d="M89,74 L92,95 L96,107 L88,107 L84,95 L81,75 Z" fill="var(--fur)" stroke="var(--patch)" stroke-width="2.8" stroke-linejoin="round"/></g>
+              <path d="M43,62 C46,48 68,47 90,50 C98,46 112,56 108,71 C105,80 94,81 80,79 C67,79 58,82 48,75 C42,71 41,66 43,62 Z" fill="var(--fur)" stroke="var(--patch)" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M43,63 C46,48 68,47 91,50 C92,61 86,71 75,71 C64,71 57,64 49,70 C44,71 42,67 43,63 Z" fill="var(--patch)"/>
+              <g class="leg leg-a"><path d="M55,72 L62,95 L67,107 L59,107 L54,94 L46,75 Z" fill="var(--fur)" stroke="var(--patch)" stroke-width="2.8" stroke-linejoin="round"/></g>
+              <g class="leg leg-a"><path d="M96,73 L99,95 L104,107 L96,107 L91,95 L88,74 Z" fill="var(--fur)" stroke="var(--patch)" stroke-width="2.8" stroke-linejoin="round"/></g>
+              <g class="head">
+                <polygon points="105,34 110,16 117,33" fill="var(--fur)" stroke="var(--patch)" stroke-width="2.6" stroke-linejoin="round"/>
+                <path d="M89,48 C91,32 104,28 116,31 C125,34 130,43 129,51 C129,59 122,63 111,63 C101,63 92,58 89,48 Z" fill="var(--fur)" stroke="var(--patch)" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M89,49 C90,34 101,28 116,30 C118,39 119,48 111,51 C102,54 94,52 89,49 Z" fill="var(--patch)"/>
+                <polygon points="94,36 101,15 112,32" fill="var(--patch)" stroke="var(--patch)" stroke-width="2.4" stroke-linejoin="round"/>
+                <path d="M102,38 Q113,38 122,46 Q113,52 104,47 Z" fill="#f2c14e" stroke="var(--patch)" stroke-width="2.2" stroke-linejoin="round"/>
+                <line x1="115" y1="40" x2="115" y2="48" stroke="var(--patch)" stroke-width="2.8" stroke-linecap="round"/>
+                <path class="eye-lid" d="M101,37 Q113,36 123,46 Q113,53 103,48 Z" fill="var(--patch)"/>
+                <path d="M122,53 Q125,56 128,52" fill="none" stroke="var(--patch)" stroke-width="2.3" stroke-linecap="round"/>
+              </g>
+            </g>
+          </svg>
+        </button>
+      </div>
+
+      <div class="dock-info">
+        <span class="res" id="res"></span>
+        <span class="status-text" id="statusText"></span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============================ DIÁLOGO: AÑADIR LISTA ============================ -->
+<dialog id="dlgAdd">
+  <div class="dlg-head">
+    <div><h2>Añadir lista M3U</h2><p>Se guarda en este dispositivo y puedes activarla o desactivarla.</p></div>
+    <button class="btn icon ghost" data-close aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <div class="grp">
+      <span class="grp-label">Nombre</span>
+      <input class="field" id="addName" placeholder="Ej: Deportes, TV Chile, Cine…" maxlength="60">
+    </div>
+    <div class="grp">
+      <span class="grp-label">Desde un archivo</span>
+      <label class="drop"><svg class="i"><use href="#i-file"/></svg>Elegir archivo .m3u / .m3u8
+        <input type="file" id="addFile" accept=".m3u,.m3u8,.txt,audio/x-mpegurl,application/vnd.apple.mpegurl,application/x-mpegurl,text/plain" class="hidden">
+      </label>
+    </div>
+    <div class="grp">
+      <span class="grp-label">Desde un enlace</span>
+      <div class="grp-row">
+        <input class="field" id="addUrl" type="url" placeholder="https://…/lista.m3u" inputmode="url">
+        <button class="btn" id="addUrlBtn">Guardar</button>
+      </div>
+      <div class="note">Las listas con enlace se pueden <b>actualizar</b> después. Si el servidor bloquea la descarga desde el navegador, descárgala y súbela como archivo.</div>
+    </div>
+    <div class="grp">
+      <span class="grp-label">Pegando el texto</span>
+      <textarea class="field" id="addText" rows="4" placeholder="#EXTM3U&#10;#EXTINF:-1 group-title=&quot;Noticias&quot;,Mi canal&#10;https://…"></textarea>
+      <button class="btn" id="addTextBtn">Guardar texto como lista</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ============================ DIÁLOGO: AJUSTES ============================ -->
+<dialog id="dlgSettings">
+  <div class="dlg-head">
+    <div><h2>Ajustes</h2><p>Todo se recuerda en este dispositivo.</p></div>
+    <button class="btn icon ghost" data-close aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <div class="grp">
+      <span class="grp-label">Skin</span>
+      <div class="seg" id="skinSeg">
+        <button data-skin="viole">Viole · blanco y negro</button>
+        <button data-skin="halloween">Halloween</button>
+      </div>
+    </div>
+    <div class="grp">
+      <span class="grp-label">Viole</span>
+      <div class="switch-row"><span>Viole pasea (y se asoma en pantalla completa)</span><span class="switch"><input type="checkbox" id="catToggle" aria-label="Mostrar a Viole"></span></div>
+    </div>
+    <div class="grp">
+      <span class="grp-label">Copia de seguridad</span>
+      <div class="note">Para pasar listas, favoritos y ajustes entre Windows, Omarchy y la Xiaomi Pad 6: exporta aquí e importa el archivo en el otro dispositivo. También acepta los respaldos de la versión anterior.</div>
+      <div class="grp-row">
+        <button class="btn" id="btnExport" style="flex:1"><svg class="i"><use href="#i-down"/></svg>Exportar</button>
+        <label class="btn" style="flex:1"><svg class="i"><use href="#i-up"/></svg>Importar<input type="file" id="importFile" accept=".json,application/json" class="hidden"></label>
+      </div>
+    </div>
+    <div class="grp">
+      <span class="grp-label">Memoria del dispositivo</span>
+      <div class="kv"><span>Listas guardadas</span><b id="kvLists">–</b></div>
+      <div class="kv"><span>Espacio usado</span><b id="kvUsage">–</b></div>
+      <div class="kv"><span>Protección contra borrado automático</span><b id="kvPersist">–</b></div>
+      <div class="grp-row"><button class="btn" id="btnDemos" style="flex:1">Añadir listas de prueba</button></div>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const IS_BETA = /\/beta\//.test(location.pathname);
+if (IS_BETA) { document.body.classList.add('is-beta'); document.title = 'Viole IPTV β'; }
+/* =========================================================================
+   VIOLE IPTV · v3
+   Estructura del código (cada bloque tiene una sola responsabilidad):
+     1. Utilidades
+     2. Memoria: ajustes (localStorage) + listas (IndexedDB)
+     3. Lector de listas M3U
+     4. Estado y filtros
+     5. Pintado de la interfaz
+     6. Motor de reproducción
+     7. Viole (paseo) y Viole Runner (juego)
+     8. Diálogos, menús, teclado
+     9. Arranque
+   ========================================================================= */
+
+/* ---------- 1. UTILIDADES ---------- */
+const $ = (s) => document.querySelector(s);
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function h(tag, attrs = {}, ...children) {
+  // Crea elementos con textContent: nunca se interpreta HTML que venga de una lista M3U.
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k.startsWith('data-') || k.startsWith('aria-') || k === 'role') n.setAttribute(k, v);
+    else n[k] = v;
+  }
+  for (const c of children) if (c != null) n.append(c);
+  return n;
+}
+function icon(id, cls = 'i') {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('class', cls);
+  const u = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  u.setAttribute('href', '#' + id);
+  s.append(u);
+  return s;
+}
+function safeHttpUrl(u) {
+  if (!u) return '';
+  try { const x = new URL(u.trim()); return (x.protocol === 'http:' || x.protocol === 'https:') ? x.href : ''; }
+  catch { return ''; }
+}
+function initials(name) {
+  const w = String(name).replace(/[^\p{L}\p{N} ]/gu, ' ').trim().split(/\s+/);
+  return ((w[0] || '?')[0] + (w[1] ? w[1][0] : (w[0] || '')[1] || '')).toUpperCase();
+}
+let toastTimer;
+function toast(msg, isErr = false) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.toggle('err', isErr);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const ta = h('textarea', { value: text });
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.append(ta); ta.select();
+    const ok = document.execCommand('copy'); ta.remove(); return ok;
+  }
+}
+function uid() { return 'pl_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function fmtBytes(b) { if (!b && b !== 0) return '–'; const u = ['B','KB','MB','GB']; let i = 0; while (b >= 1024 && i < 3) { b /= 1024; i++; } return b.toFixed(i ? 1 : 0) + ' ' + u[i]; }
+
+/* ---------- 2. MEMORIA ----------
+   - Ajustes, favoritos, recientes y último canal: localStorage (pequeño, síncrono).
+   - Listas M3U (pueden pesar MB): IndexedDB.
+   - Si IndexedDB no está disponible, las listas viven solo en memoria y se avisa.
+     Antes se copiaba todo a localStorage en cada cambio: con listas grandes
+     superaba el límite (~5 MB), fallaba en silencio y podía resucitar listas borradas. */
+const Store = {
+  key: (k) => 'viole.v3.' + k,
+  get(k, fallback) {
+    try { const v = localStorage.getItem(this.key(k)); return v === null ? fallback : JSON.parse(v); }
+    catch { return fallback; }
+  },
+  set(k, v) { try { localStorage.setItem(this.key(k), JSON.stringify(v)); return true; } catch { return false; } }
+};
+
+const DB = {
+  db: null,
+  available: false,
+  open() {
+    return new Promise((resolve) => {
+      if (!('indexedDB' in window)) return resolve(false);
+      let done = false;
+      const finish = (ok) => { if (!done) { done = true; this.available = ok; resolve(ok); } };
+      setTimeout(() => finish(false), 4000); // algunos navegadores se quedan colgados en vez de fallar
+      try {
+        const req = indexedDB.open('viole-iptv', 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore('playlists', { keyPath: 'id' }); };
+        req.onsuccess = () => { this.db = req.result; finish(true); };
+        req.onerror = () => finish(false);
+        req.onblocked = () => finish(false);
+      } catch { finish(false); }
+    });
+  },
+  tx(mode, fn) {
+    return new Promise((resolve, reject) => {
+      if (!this.available) return resolve(null);
+      const t = this.db.transaction('playlists', mode);
+      const store = t.objectStore('playlists');
+      const r = fn(store);
+      t.oncomplete = () => resolve(r && 'result' in r ? r.result : true);
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error || new Error('Transacción abortada'));
+    });
+  },
+  all() { return this.tx('readonly', (s) => s.getAll()); },
+  put(pl) { return this.tx('readwrite', (s) => s.put(pl)); },
+  del(id) { return this.tx('readwrite', (s) => s.delete(id)); }
+};
+
+async function askPersistentStorage() {
+  // Pide al navegador que no borre los datos cuando le falte espacio.
+  try { if (navigator.storage && navigator.storage.persist) return await navigator.storage.persist(); } catch {}
+  return false;
+}
+
+/* ---------- 3. LECTOR M3U ---------- */
+function parseExtinf(line) {
+  const attr = (name) => {
+    const m = new RegExp(name + '\\s*=\\s*"([^"]*)"', 'i').exec(line);
+    return m ? m[1].trim() : '';
+  };
+  // El nombre va tras la primera coma que no esté dentro de comillas
+  // (antes se usaba la última coma: rompía nombres como "Canal 13, Chile").
+  let name = '', inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') inQuotes = !inQuotes;
+    else if (c === ',' && !inQuotes) { name = line.slice(i + 1).trim(); break; }
+  }
+  return { name: name || attr('tvg-name'), logo: attr('tvg-logo'), group: attr('group-title') };
+}
+
+function parseM3U(text) {
+  const lines = String(text).replace(/^﻿/, '').split(/\r?\n/);
+  const out = [];
+  let meta = null, extGroup = '';
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('#EXTINF')) { meta = parseExtinf(line); continue; }
+    if (line.startsWith('#EXTGRP:')) { extGroup = line.slice(8).trim(); continue; }
+    if (line.startsWith('#')) continue;
+    const url = safeHttpUrl(line);
+    if (!url) { meta = null; continue; }
+    const m = meta || {};
+    out.push({
+      name: (m.name || '').slice(0, 140) || 'Canal ' + (out.length + 1),
+      logo: safeHttpUrl(m.logo),
+      group: (m.group || extGroup || 'General').slice(0, 80),
+      url
+    });
+    meta = null; extGroup = '';
+  }
+  return out;
+}
+
+/* ---------- 4. ESTADO Y FILTROS ---------- */
+const DEFAULT_SETTINGS = { skin: 'viole', cat: true, tab: 'all', group: 'ALL', listsOpen: true, sideCollapsed: false, volume: 1, muted: false };
+const state = {
+  settings: { ...DEFAULT_SETTINGS, ...Store.get('settings', {}) },
+  favorites: new Set(Store.get('favorites', [])),   // por URL: sobrevive a reimportar listas
+  recents: Store.get('recents', []),                 // URLs, la más reciente primero
+  lastUrl: Store.get('lastUrl', ''),
+  playlists: [],
+  channels: [],    // canales de las listas activas
+  visible: [],     // canales tras filtros
+  renderLimit: 300,
+  current: null    // canal en reproducción (objeto, no índice)
+};
+const saveSettings = () => Store.set('settings', state.settings);
+const saveFavorites = () => Store.set('favorites', [...state.favorites]);
+
+function rebuildChannels() {
+  state.channels = [];
+  for (const pl of state.playlists) {
+    if (!pl.enabled) continue;
+    pl.channels.forEach((c, i) => state.channels.push({ ...c, key: pl.id + ':' + i, playlistId: pl.id, playlistName: pl.name }));
+  }
+  // Si el canal actual sigue existiendo, re-enlazarlo al objeto nuevo
+  if (state.current) {
+    state.current = state.channels.find((c) => c.key === state.current.key)
+                 || state.channels.find((c) => c.url === state.current.url)
+                 || state.current;
+  }
+}
+
+function applyFilters() {
+  const q = $('#q').value.trim().toLowerCase();
+  const { tab, group } = state.settings;
+  let list = state.channels;
+  if (tab === 'fav') list = list.filter((c) => state.favorites.has(c.url));
+  if (tab === 'recent') {
+    const byUrl = new Map();
+    for (const c of state.channels) if (!byUrl.has(c.url)) byUrl.set(c.url, c);
+    list = state.recents.map((u) => byUrl.get(u)).filter(Boolean);
+  }
+  if (group !== 'ALL') list = list.filter((c) => c.group === group);
+  if (q) list = list.filter((c) => c.name.toLowerCase().includes(q) || c.group.toLowerCase().includes(q) || c.playlistName.toLowerCase().includes(q));
+  state.visible = list;
+  state.renderLimit = 300;
+  $('#qClear').classList.toggle('hidden', !q);
+  renderChannels();
+}
+
+/* La posición se calcula siempre a partir del canal actual (no de un índice guardado),
+   así "anterior/siguiente" no se desordena al buscar o filtrar. */
+function currentPos() {
+  if (!state.current) return -1;
+  const i = state.visible.findIndex((c) => c.key === state.current.key);
+  return i !== -1 ? i : state.visible.findIndex((c) => c.url === state.current.url);
+}
+function zap(step) {
+  const list = state.visible.length ? state.visible : state.channels;
+  if (!list.length) return;
+  let i = list.indexOf(state.current);
+  if (i === -1) i = currentPos();
+  const next = list[(i + step + list.length) % list.length];
+  playChannel(next);
+}
+
+/* ---------- 5. PINTADO ---------- */
+function renderStats() {
+  const active = state.playlists.filter((p) => p.enabled).length;
+  $('#stats').textContent = `${active}/${state.playlists.length} listas · ${state.channels.length.toLocaleString('es')} canales`;
+  $('#listsCount').textContent = state.playlists.length;
+  $('#nFav').textContent = state.favorites.size;
+}
+
+function renderLists() {
+  const box = $('#lists');
+  box.replaceChildren();
+  if (!state.playlists.length) {
+    box.append(h('div', { class: 'empty-small', text: 'Aún no hay listas. Pulsa "Añadir lista".' }));
+    return;
+  }
+  for (const pl of state.playlists) {
+    const cb = h('input', { type: 'checkbox', checked: pl.enabled, 'aria-label': 'Activar ' + pl.name });
+    cb.addEventListener('change', () => togglePlaylist(pl.id));
+    const text = h('div', { class: 'pl-text' },
+      h('div', { class: 'pl-name', text: pl.name }),
+      h('div', { class: 'pl-meta', text: `${pl.channels.length.toLocaleString('es')} canales${pl.sourceUrl ? ' · enlace' : ''}` }));
+    text.addEventListener('click', () => cb.click());
+    const row = h('div', { class: 'pl' + (pl.enabled ? '' : ' off') }, cb, text);
+    if (pl.sourceUrl) {
+      const r = h('button', { class: 'btn icon ghost', title: 'Actualizar desde el enlace', 'aria-label': 'Actualizar' }, icon('i-refresh'));
+      r.addEventListener('click', () => refreshPlaylist(pl.id));
+      row.append(r);
+    }
+    const d = h('button', { class: 'btn icon ghost danger', title: 'Borrar lista', 'aria-label': 'Borrar' }, icon('i-trash'));
+    d.addEventListener('click', () => removePlaylist(pl.id));
+    row.append(d);
+    box.append(row);
+  }
+}
+
+function renderGroups() {
+  const sel = $('#group');
+  const counts = new Map();
+  for (const c of state.channels) counts.set(c.group, (counts.get(c.group) || 0) + 1);
+  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'es'));
+  if (state.settings.group !== 'ALL' && !counts.has(state.settings.group)) state.settings.group = 'ALL';
+  sel.replaceChildren(h('option', { value: 'ALL', text: `Todas las categorías (${groups.length})` }),
+    ...groups.map((g) => h('option', { value: g, text: `${g}  ·  ${counts.get(g)}` })));
+  sel.value = state.settings.group;
+}
+
+function renderTabs() {
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === state.settings.tab)));
+}
+
+function logoNode(ch, cls = 'logo') {
+  const box = h('div', { class: cls, text: initials(ch.name) });
+  if (ch.logo) {
+    const img = h('img', { src: ch.logo, alt: '', loading: 'lazy', decoding: 'async', referrerPolicy: 'no-referrer' });
+    img.addEventListener('error', () => img.remove(), { once: true });
+    box.append(img);
+  }
+  return box;
+}
+
+function renderChannels() {
+  const box = $('#channels');
+  box.replaceChildren();
+  const list = state.visible;
+  $('#shown').textContent = `${list.length.toLocaleString('es')} canales`;
+  if (!list.length) {
+    const msg = state.settings.tab === 'fav' ? 'Aún no hay favoritos. Toca el corazón de un canal.'
+              : state.settings.tab === 'recent' ? 'Aquí aparecerán los últimos canales que veas.'
+              : state.playlists.length ? 'Ningún canal coincide con el filtro.' : 'Añade una lista para empezar.';
+    box.append(h('div', { class: 'empty' }, h('div', { class: 'paw', text: '🐾' }), h('div', { text: msg })));
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  const max = Math.min(list.length, state.renderLimit);
+  for (let i = 0; i < max; i++) {
+    const ch = list[i];
+    const isFav = state.favorites.has(ch.url);
+    const isActive = state.current && state.current.key === ch.key;
+    const fav = h('button', { class: 'fav' + (isFav ? ' is-on' : ''), title: 'Favorito', 'aria-label': 'Favorito', 'data-fav': '1' }, icon('i-heart'));
+    const row = h('div', { class: 'row' + (isActive ? ' active' : ''), tabIndex: 0, role: 'button', 'data-i': String(i) },
+      logoNode(ch),
+      h('div', { class: 'row-text' },
+        h('div', { class: 'row-name', text: ch.name }),
+        h('div', { class: 'row-meta', text: `${ch.group} · ${ch.playlistName}` })),
+      fav);
+    frag.append(row);
+  }
+  if (list.length > max) {
+    const more = h('button', { class: 'btn', text: `Mostrar ${Math.min(300, list.length - max)} más` });
+    more.addEventListener('click', () => { state.renderLimit += 300; renderChannels(); });
+    frag.append(h('div', { class: 'more-row' }, more));
+  }
+  box.append(frag);
+}
+
+// Un solo "escuchador" para toda la lista (en vez de uno por canal).
+$('#channels').addEventListener('click', (e) => {
+  const row = e.target.closest('.row');
+  if (!row) return;
+  const ch = state.visible[Number(row.dataset.i)];
+  if (!ch) return;
+  if (e.target.closest('[data-fav]')) { toggleFavorite(ch); return; }
+  playChannel(ch);
+});
+$('#channels').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.classList.contains('row')) e.target.click();
+});
+
+function markActiveRow() {
+  // Al cambiar de canal solo se mueve la marca; no se repinta toda la lista.
+  document.querySelectorAll('#channels .row.active').forEach((r) => r.classList.remove('active'));
+  const pos = currentPos();
+  if (pos === -1) return;
+  const row = document.querySelector(`#channels .row[data-i="${pos}"]`);
+  if (row) { row.classList.add('active'); row.scrollIntoView({ block: 'nearest' }); }
+}
+
+function renderNowPlaying() {
+  const ch = state.current;
+  $('#emptyStage').classList.toggle('hidden', !!ch);
+  if (!ch) return;
+  $('#nowLogo').replaceWith(Object.assign(logoNode(ch), { id: 'nowLogo' }));
+  $('#nowName').textContent = ch.name;
+  $('#nowMeta').textContent = `${ch.group} · ${ch.playlistName}`;
+  const fav = state.favorites.has(ch.url);
+  $('#btnFav').classList.toggle('is-on', fav);
+  $('#btnFav').title = fav ? 'Quitar de favoritos (S)' : 'Añadir a favoritos (S)';
+}
+
+function setStatus(text, kind) {
+  const p = $('#pill');
+  p.textContent = text;
+  p.className = 'pill ' + (kind || '');
+  $('#statusText').textContent = text;
+}
+
+function refreshAll() {
+  rebuildChannels();
+  renderStats();
+  renderLists();
+  renderGroups();
+  renderTabs();
+  applyFilters();
+  renderNowPlaying();
+}
+
+/* ---------- Acciones sobre listas ---------- */
+async function addPlaylist(name, text, sourceUrl = '', fixedId = null) {
+  const channels = parseM3U(text);
+  if (!channels.length) { toast('No encontré canales válidos en esa lista.', true); return false; }
+  const pl = { id: fixedId || uid(), name: (name || '').trim() || `Lista ${state.playlists.length + 1}`, enabled: true, createdAt: Date.now(), updatedAt: Date.now(), sourceUrl, channels };
+  try { await DB.put(pl); } catch (e) { toast('No se pudo guardar la lista en el dispositivo (¿sin espacio?).', true); }
+  const idx = state.playlists.findIndex((p) => p.id === pl.id);
+  if (idx === -1) state.playlists.push(pl); else state.playlists[idx] = pl;
+  refreshAll();
+  askPersistentStorage();
+  toast(`Lista "${pl.name}" guardada · ${channels.length.toLocaleString('es')} canales`);
+  catSay('¡Lista nueva! 🐾');
+  return true;
+}
+async function togglePlaylist(id) {
+  const pl = state.playlists.find((p) => p.id === id);
+  if (!pl) return;
+  pl.enabled = !pl.enabled;
+  try { await DB.put(pl); } catch {}
+  refreshAll();
+}
+async function removePlaylist(id) {
+  const pl = state.playlists.find((p) => p.id === id);
+  if (!pl || !confirm(`¿Borrar la lista "${pl.name}"? Los favoritos se mantienen.`)) return;
+  try { await DB.del(id); } catch {}
+  state.playlists = state.playlists.filter((p) => p.id !== id);
+  refreshAll();
+  toast(`Lista "${pl.name}" borrada`);
+}
+async function fetchListText(url) {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.text();
+}
+async function refreshPlaylist(id) {
+  const pl = state.playlists.find((p) => p.id === id);
+  if (!pl || !pl.sourceUrl) return;
+  toast(`Actualizando "${pl.name}"…`);
+  try {
+    const channels = parseM3U(await fetchListText(pl.sourceUrl));
+    if (!channels.length) throw new Error('vacía');
+    pl.channels = channels; pl.updatedAt = Date.now();
+    await DB.put(pl);
+    refreshAll();
+    toast(`"${pl.name}" actualizada · ${channels.length.toLocaleString('es')} canales`);
+  } catch {
+    toast('No se pudo actualizar: el servidor no responde o bloquea la descarga desde el navegador.', true);
+  }
+}
+function toggleFavorite(ch) {
+  if (!ch) return;
+  if (state.favorites.has(ch.url)) { state.favorites.delete(ch.url); toast('Quitado de favoritos'); }
+  else { state.favorites.add(ch.url); toast('Añadido a favoritos'); }
+  saveFavorites();
+  renderStats();
+  renderNowPlaying();
+  if (state.settings.tab === 'fav') applyFilters();
+  else document.querySelectorAll('#channels .row').forEach((r) => {
+    const c = state.visible[Number(r.dataset.i)];
+    if (c) r.querySelector('.fav').classList.toggle('is-on', state.favorites.has(c.url));
+  });
+}
+function rememberRecent(url) {
+  state.recents = [url, ...state.recents.filter((u) => u !== url)].slice(0, 30);
+  Store.set('recents', state.recents);
+  Store.set('lastUrl', url);
+}
+
+/* ---------- 6. MOTOR DE REPRODUCCIÓN ----------
+   Reglas para que sea estable:
+   - Cada intento de reproducción tiene un número (token). Los eventos de intentos
+     viejos se ignoran. Antes, un error del canal anterior podía mostrar
+     "Sin señal" en el canal nuevo.
+   - Los errores de vídeo/códec se intentan recuperar 2 veces, no infinitas.
+   - Si un directo se corta tras haber funcionado, se reconecta solo (máx. 2 veces). */
+const video = $('#video');
+const Engine = { hls: null, mode: null, token: 0, mediaRetries: 0, autoReconnects: 0, hadPlayback: false, url: '' };
+
+function canNativeHls() { return !!video.canPlayType('application/vnd.apple.mpegurl'); }
+function isMixedContent(url) { return location.protocol === 'https:' && url.startsWith('http:'); }
+
+function teardown() {
+  Engine.mode = null;              // a partir de aquí, cualquier evento del vídeo viejo se ignora
+  if (Engine.hls) { try { Engine.hls.destroy(); } catch {} Engine.hls = null; }
+  video.pause();
+  video.removeAttribute('src');
+  try { video.load(); } catch {}
+  $('#qualityRow').classList.add('hidden');
+  $('#res').textContent = '';
+}
+
+function playChannel(ch, opts = {}) {
+  if (!ch) return;
+  state.current = ch;
+  rememberRecent(ch.url);
+  renderNowPlaying();
+  markActiveRow();
+  if (window.innerWidth < 900) closeSide();
+  Engine.autoReconnects = opts.keepReconnects ? Engine.autoReconnects : 0;
+  startStream(ch.url, opts);
+  catPoke();
+}
+
+function startStream(url, { native = false } = {}) {
+  const token = ++Engine.token;
+  teardown();
+  stopRunner();
+  Engine.url = url;
+  Engine.mediaRetries = 0;
+  Engine.hadPlayback = false;
+  $('#error').classList.add('hidden');
+  $('#btnUnmute').classList.add('hidden');
+  showLoading(true);
+  setStatus('Conectando', 'wait');
+
+  if (isMixedContent(url)) { showError('mixed'); return; }
+
+  const isFile = /\.(mp4|webm|ogv|mov|m4v)(\?|#|$)/i.test(url);
+  const hlsOk = window.Hls && Hls.isSupported();
+
+  if (!native && hlsOk && !isFile) startHls(url, token);
+  else startNative(url, token);
+}
+
+function startHls(url, token) {
+  const hls = new Hls({
+    enableWorker: true,
+    lowLatencyMode: false,          // la mayoría de IPTV no es "baja latencia"; activarlo provoca más cortes
+    backBufferLength: 30,
+    maxBufferLength: 30,
+    manifestLoadingMaxRetry: 2,
+    levelLoadingMaxRetry: 3,
+    fragLoadingMaxRetry: 4,
+    startFragPrefetch: true
+  });
+  Engine.hls = hls;
+  Engine.mode = 'hls';
+
+  hls.on(Hls.Events.MANIFEST_PARSED, (_e, data) => {
+    if (token !== Engine.token) return;
+    setupQuality(data.levels);
+    tryPlay(token);
+  });
+  hls.on(Hls.Events.LEVEL_SWITCHED, (_e, data) => {
+    if (token !== Engine.token) return;
+    const lv = hls.levels[data.level];
+    $('#res').textContent = lv && lv.height ? lv.height + 'p' : '';
+  });
+  hls.on(Hls.Events.ERROR, (_e, data) => {
+    if (token !== Engine.token || !data.fatal) return;
+    if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+      Engine.mediaRetries++;
+      if (Engine.mediaRetries === 1) { hls.recoverMediaError(); return; }
+      if (Engine.mediaRetries === 2) { hls.swapAudioCodec(); hls.recoverMediaError(); return; }
+      showError('codec'); return;
+    }
+    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+      if (Engine.hadPlayback && Engine.autoReconnects < 2) {        // corte en un directo que ya iba
+        Engine.autoReconnects++;
+        setStatus('Reconectando', 'wait');
+        setTimeout(() => { if (token === Engine.token) playChannel(state.current, { keepReconnects: true }); }, 2500);
+        return;
+      }
+      if (canNativeHls()) { startNative(Engine.url, token); return; } // el reproductor del sistema no necesita CORS
+      showError('network'); return;
+    }
+    showError('other');
+  });
+  hls.loadSource(url);
+  hls.attachMedia(video);
+}
+
+function startNative(url, token) {
+  if (Engine.hls) { try { Engine.hls.destroy(); } catch {} Engine.hls = null; }
+  Engine.mode = 'native';
+  video.src = url;
+  tryPlay(token);
+}
+
+function tryPlay(token) {
+  video.volume = state.settings.volume;
+  video.muted = state.settings.muted;
+  const p = video.play();
+  if (!p) return;
+  p.catch((err) => {
+    if (token !== Engine.token) return;
+    if (err && err.name === 'NotAllowedError') {
+      // El navegador no deja reproducir con sonido sin un toque previo: arrancamos en silencio.
+      video.muted = true;
+      video.play().then(() => $('#btnUnmute').classList.remove('hidden')).catch(() => {
+        showLoading(false); setStatus('Toca ▶', 'wait');
+      });
+    }
+  });
+}
+
+video.addEventListener('playing', () => {
+  if (!Engine.mode) return;
+  Engine.hadPlayback = true;
+  showLoading(false);
+  setStatus(Engine.mode === 'hls' ? 'En vivo' : 'En vivo · sistema', 'live');
+  if (!$('#res').textContent && video.videoHeight) $('#res').textContent = video.videoHeight + 'p';
+});
+video.addEventListener('waiting', () => { if (Engine.mode && Engine.hadPlayback) setStatus('Cargando', 'wait'); });
+video.addEventListener('error', () => {
+  if (Engine.mode !== 'native' || !video.getAttribute('src')) return;   // en modo HLS los errores los gestiona hls.js
+  showError(isMixedContent(Engine.url) ? 'mixed' : 'network');
+});
+video.addEventListener('volumechange', () => {
+  if (!Engine.mode) return;
+  state.settings.volume = video.volume;
+  if (!$('#btnUnmute').classList.contains('hidden') && !video.muted) $('#btnUnmute').classList.add('hidden');
+  state.settings.muted = video.muted && $('#btnUnmute').classList.contains('hidden');
+  saveSettings();
+});
+$('#btnUnmute').addEventListener('click', () => { video.muted = false; $('#btnUnmute').classList.add('hidden'); state.settings.muted = false; saveSettings(); });
+
+function setupQuality(levels) {
+  const row = $('#qualityRow'), sel = $('#quality');
+  if (!levels || levels.length <= 1) { row.classList.add('hidden'); return; }
+  sel.replaceChildren(h('option', { value: '-1', text: 'Automática' }),
+    ...levels.map((l, i) => h('option', { value: String(i), text: l.height ? `${l.height}p · ${Math.round(l.bitrate / 1000)} kbps` : `Nivel ${i + 1}` })));
+  row.classList.remove('hidden');
+}
+$('#quality').addEventListener('change', (e) => { if (Engine.hls) Engine.hls.currentLevel = Number(e.target.value); });
+
+function showLoading(on) { $('#loading').classList.toggle('hidden', !on); }
+
+const ERRORS = {
+  mixed:   ['Canal bloqueado por seguridad', 'Este canal usa http:// y la app está en https://, así que el navegador lo bloquea. Ábrelo en VLC o mpv con su enlace.'],
+  network: ['Sin señal', 'El servidor no responde o no permite reproducirlo desde un navegador. Puede estar caído o funcionar solo en apps como VLC.'],
+  codec:   ['Formato no compatible', 'El vídeo o el audio de este canal usa un formato que este navegador no reproduce. Prueba el reproductor del sistema o VLC.'],
+  other:   ['Algo falló', 'No se pudo reproducir este canal.']
+};
+function showError(kind) {
+  teardown();
+  showLoading(false);
+  setStatus('Sin señal', 'err');
+  const [title, text] = ERRORS[kind] || ERRORS.other;
+  $('#errTitle').textContent = title;
+  $('#errText').textContent = text;
+  const actions = $('#errActions');
+  actions.replaceChildren();
+  const add = (label, ic, fn, primary) => {
+    const b = h('button', { class: 'btn' + (primary ? ' primary' : '') }, icon(ic), h('span', { text: label }));
+    b.addEventListener('click', fn); actions.append(b);
+  };
+  if (kind !== 'mixed') add('Reintentar', 'i-refresh', () => playChannel(state.current), true);
+  if (kind !== 'mixed' && canNativeHls()) add('Reproductor del sistema', 'i-play', () => playChannel(state.current, { native: true }));
+  add('Copiar enlace', 'i-copy', copyCurrentUrl, kind === 'mixed');
+  if (IS_ANDROID) add('Abrir en otra app', 'i-ext', openExternal);
+  $('#errInfo').hidden = true;
+  $('#errMore').setAttribute('aria-expanded', 'false');
+  $('#error').classList.remove('hidden');
+  startRunner();
+}
+
+async function copyCurrentUrl() {
+  if (!state.current) return;
+  toast((await copyText(state.current.url)) ? 'Enlace copiado. Pégalo en VLC o mpv.' : 'No se pudo copiar el enlace', false);
+}
+function openExternal() {
+  if (!state.current) return;
+  // En Android, un enlace "intent:" ofrece abrir el vídeo con VLC, MX Player, etc.
+  const u = new URL(state.current.url);
+  location.href = `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=${u.protocol.replace(':', '')};type=video/*;end`;
+}
+
+/* ---------- Pantalla completa ---------- */
+const stage = $('#stage');
+function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement) || stage.classList.contains('pseudo-fs'); }
+async function toggleFullscreen() {
+  if (stage.classList.contains('pseudo-fs')) { stage.classList.remove('pseudo-fs'); return; }
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    try { await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen()); } catch {}
+    return;
+  }
+  try {
+    if (stage.requestFullscreen) await stage.requestFullscreen();
+    else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    else throw new Error('sin API');
+    if (screen.orientation && screen.orientation.lock && IS_ANDROID) screen.orientation.lock('landscape').catch(() => {});
+  } catch { stage.classList.add('pseudo-fs'); }
+}
+
+/* ---------- 7a. VIOLE PASEA ----------
+   Tres maneras de pasear, según cómo estés usando la app:
+   - 'roam'   escritorio: siempre a la vista, camina despacio cada 15–35 s.
+   - 'patrol' en vertical: siempre a la vista, va y viene con pausas cortas.
+   - 'peek'   tablet en horizontal y pantalla completa: se asoma por un borde,
+              camina unos segundos, se queda mirando y se va. Vuelve cada tanto
+              o cuando tocas la pantalla (como mucho una vez cada 45 s).
+   Cada paseo lleva un número (gen). Si cambia el modo, el paseo viejo se abandona. */
+const Cat = { x: -999, gen: 0, timer: 0, mode: '', peeking: false, lastPeek: 0 };
+const catEl = $('#cat');
+const CAT_LINES = ['Prrr…', 'Miau 🐾', 'Aquí vigilando', 'Buen canal', '¿Otro capítulo?', 'Zzz…'];
+const mqPortrait = window.matchMedia('(orientation: portrait)');
+const mqTouch = window.matchMedia('(pointer: coarse)');
+
+function catMode() {
+  if (isFullscreen()) return 'peek';
+  if (mqPortrait.matches) return 'patrol';
+  if (mqTouch.matches) return 'peek';
+  return 'roam';
+}
+function catTrack() { return isFullscreen() ? $('#stageCatTrack') : $('#catTrack'); }
+function catW() { return catEl.offsetWidth || 58; }
+function catMax() { return Math.max(0, catTrack().clientWidth - catW()); }
+function catSet(x, ms) {
+  catEl.style.setProperty('--dur', (ms / 1000) + 's');
+  catEl.style.setProperty('--x', x + 'px');
+  Cat.x = x;
+}
+function catWalkTo(x, speed) {               // devuelve los ms que tarda en llegar
+  const dist = Math.abs(x - Cat.x);
+  if (dist < 1) return 0;
+  catEl.style.setProperty('--dir', x > Cat.x ? '1' : '-1');
+  catEl.classList.add('walking');
+  const ms = (dist / speed) * 1000;
+  catSet(x, ms);
+  return ms;
+}
+function catStop() { catEl.classList.remove('walking'); }
+function catSleep(ms, gen) {                  // espera; devuelve false si el paseo quedó viejo
+  return new Promise((resolve) => { Cat.timer = setTimeout(() => resolve(gen === Cat.gen), ms); });
+}
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+async function catRun(firstDelay) {
+  const gen = ++Cat.gen;
+  clearTimeout(Cat.timer);
+  Cat.peeking = false;
+  catStop();
+  const track = catTrack();
+  const moved = catEl.parentElement !== track;
+  if (moved) { track.append(catEl); catSet(-999, 0); }
+  Cat.mode = catMode();
+  if (!state.settings.cat) return;
+  await nextFrame();
+  if (gen !== Cat.gen) return;
+  const max = catMax();
+
+  if (Cat.mode === 'peek') {
+    // Si estaba a la vista (por ejemplo, al girar la tablet), se va caminando.
+    if (!moved && Cat.x >= 0 && Cat.x <= max && !REDUCED_MOTION) {
+      const ms = catWalkTo(Cat.x < max / 2 ? -catW() - 20 : track.clientWidth + 20, 45);
+      if (!(await catSleep(ms, gen))) return;
+      catStop();
+    } else {
+      catSet(-catW() - 20, 0);
+    }
+    if (REDUCED_MOTION) return;
+    let delay = firstDelay ?? 2500;
+    for (;;) {
+      if (!(await catSleep(delay, gen))) return;
+      if (!document.hidden && !(await catPeek(gen))) return;
+      delay = isFullscreen() ? 180000 + Math.random() * 120000 : 60000 + Math.random() * 60000;
+    }
+  }
+
+  // 'roam' y 'patrol': siempre a la vista
+  if (Cat.x < 0 || Cat.x > max) catSet(max * (0.25 + Math.random() * 0.5), 0);
+  if (REDUCED_MOTION) return;
+  const [speed, minW, maxW] = Cat.mode === 'patrol' ? [32, 2500, 6500] : [26, 15000, 35000];
+  let delay = firstDelay ?? (Cat.mode === 'patrol' ? 1500 : 6000);
+  for (;;) {
+    if (!(await catSleep(delay, gen))) return;
+    delay = minW + Math.random() * (maxW - minW);
+    const m = catMax();
+    if (document.hidden || m < 40) continue;
+    let t = Math.random() * m;
+    if (Math.abs(t - Cat.x) < 60) t = Cat.x > m / 2 ? Math.random() * (m / 2 - 30) : m / 2 + 30 + Math.random() * (m / 2 - 30);
+    t = Math.max(0, Math.min(m, t));
+    const ms = catWalkTo(t, speed);
+    if (!(await catSleep(ms, gen))) return;
+    catStop();
+  }
+}
+
+async function catPeek(gen) {
+  const W = catTrack().clientWidth, cw = catW();
+  if (W < cw * 2) return gen === Cat.gen;
+  Cat.peeking = true;
+  const speed = isFullscreen() ? 75 : 40;
+  const fromLeft = Math.random() < 0.5;
+  const out = fromLeft ? -cw - 20 : W + 20;
+  const into = Math.min(W * (0.15 + Math.random() * 0.2), speed * 4.5);   // como mucho ~4,5 s caminando
+  const stop = fromLeft ? into : W - cw - into;
+  catSet(out, 0);
+  await nextFrame();
+  if (gen !== Cat.gen) return false;
+  let ms = catWalkTo(stop, speed);
+  if (!(await catSleep(ms, gen))) return false;
+  catStop();
+  if (!(await catSleep(2200 + Math.random() * 1500, gen))) return false; // se queda mirando
+  ms = catWalkTo(out, speed);
+  if (!(await catSleep(ms, gen))) return false;
+  catStop();
+  Cat.peeking = false;
+  Cat.lastPeek = Date.now();
+  return true;
+}
+
+function catPoke() {
+  // Un toque, un cambio de canal: Viole se asoma (si toca asomarse y hace rato que no lo hace).
+  if (!state.settings.cat || REDUCED_MOTION || Cat.mode !== 'peek' || Cat.peeking) return;
+  if (Date.now() - Cat.lastPeek < 45000) return;
+  catRun(400);
+}
+function catRefresh() {
+  if (catMode() !== Cat.mode || catEl.parentElement !== catTrack()) { catRun(isFullscreen() ? 1500 : undefined); return; }
+  if (Cat.mode !== 'peek' && Cat.x > catMax()) catSet(catMax(), 0);
+}
+function catSay(text) {
+  if (!state.settings.cat || Cat.x < 0 || Cat.x > catMax() + 1) return;   // si no se ve, no habla
+  const b = $('#catBubble');
+  catEl.classList.toggle('bubble-left', Cat.x > catMax() / 2);
+  b.textContent = text;
+  b.classList.add('show');
+  clearTimeout(b._t);
+  b._t = setTimeout(() => b.classList.remove('show'), 2600);
+}
+function applyCatSetting() {
+  document.body.classList.toggle('no-cat', !state.settings.cat);
+  $('#catToggle').checked = state.settings.cat;
+  if (state.settings.cat) catRun();
+  else { Cat.gen++; clearTimeout(Cat.timer); }
+}
+catEl.addEventListener('click', () => catSay(CAT_LINES[Math.floor(Math.random() * CAT_LINES.length)]));
+['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => setTimeout(catRefresh, 120)));
+new MutationObserver(catRefresh).observe(stage, { attributes: true, attributeFilter: ['class'] });   // pseudo pantalla completa
+mqPortrait.addEventListener('change', () => setTimeout(catRefresh, 250));
+let catResizeT;
+window.addEventListener('resize', () => { clearTimeout(catResizeT); catResizeT = setTimeout(catRefresh, 200); });
+stage.addEventListener('pointerdown', () => { if (isFullscreen()) catPoke(); });
+let catMoveT = 0;
+stage.addEventListener('mousemove', () => { if (isFullscreen() && Date.now() - catMoveT > 2000) { catMoveT = Date.now(); catPoke(); } });
+
+/* ---------- 7b. VIOLE RUNNER (cuando no hay señal) ----------
+   Viole se dibuja con los MISMOS trazos que la de la barra (Path2D acepta rutas SVG),
+   así el juego y la app hablan el mismo idioma visual. */
+const VP = Object.fromEntries(Object.entries({
+  tail: 'M46,62 C34,42 29,20 35,10 C39,4 46,8 46,17 C45,29 50,45 55,58 Z',
+  tailPatch: 'M38,18 C36,27 40,38 45,42 C46,34 44,23 38,18 Z',
+  legB1: 'M48,72 L40,94 L37,107 L45,107 L47,95 L57,76 Z',
+  legB2: 'M89,74 L92,95 L96,107 L88,107 L84,95 L81,75 Z',
+  body: 'M43,62 C46,48 68,47 90,50 C98,46 112,56 108,71 C105,80 94,81 80,79 C67,79 58,82 48,75 C42,71 41,66 43,62 Z',
+  bodyPatch: 'M43,63 C46,48 68,47 91,50 C92,61 86,71 75,71 C64,71 57,64 49,70 C44,71 42,67 43,63 Z',
+  legA1: 'M55,72 L62,95 L67,107 L59,107 L54,94 L46,75 Z',
+  legA2: 'M96,73 L99,95 L104,107 L96,107 L91,95 L88,74 Z',
+  earR: 'M105,34 L110,16 L117,33 Z',
+  head: 'M89,48 C91,32 104,28 116,31 C125,34 130,43 129,51 C129,59 122,63 111,63 C101,63 92,58 89,48 Z',
+  headPatch: 'M89,49 C90,34 101,28 116,30 C118,39 119,48 111,51 C102,54 94,52 89,49 Z',
+  earL: 'M94,36 L101,15 L112,32 Z',
+  eye: 'M102,38 Q113,38 122,46 Q113,52 104,47 Z',
+  mouth: 'M122,53 Q125,56 128,52'
+}).map(([k, d]) => [k, new Path2D(d)]));
+
+const RUN_S = 0.6;                                 // escala de Viole en el juego
+const CAT_BOX = { w: 101 * RUN_S, h: 103 * RUN_S };
+const Runner = { raf: 0, on: false, over: false, overAt: 0, ready: true, score: 0, hi: Number(Store.get('runnerHi', 0)) || 0,
+                 speed: 5, frame: 0, t: 0, obs: [], W: 600, H: 190, colors: {}, p: { x: 34, y: 0, vy: 0, ground: true } };
+const cv = $('#runner');
+const groundY = () => Runner.H - 30;
+
+function runnerSize() {
+  const r = cv.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  Runner.W = Math.max(280, r.width);
+  Runner.H = r.height || 190;
+  cv.width = Runner.W * dpr; cv.height = Runner.H * dpr;
+  cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function startRunner() {
+  stopRunner();
+  requestAnimationFrame(() => {
+    runnerSize();
+    Runner.colors = { accent: cssVar('--accent') || '#f2c14e', muted: cssVar('--muted') || '#9b9aa0', faint: cssVar('--faint') || '#6c6b72',
+                      line: cssVar('--line-2') || 'rgba(255,255,255,.14)', surface: cssVar('--surface-3') || '#25252a' };
+    resetRunner();
+    Runner.on = true;
+    Runner.raf = requestAnimationFrame(runnerLoop);
+  });
+}
+function stopRunner() { Runner.on = false; cancelAnimationFrame(Runner.raf); }
+function resetRunner() {
+  Object.assign(Runner, { over: false, ready: true, score: 0, speed: 5, frame: 0, obs: [] });
+  Object.assign(Runner.p, { y: groundY() - CAT_BOX.h, vy: 0, ground: true });
+}
+function runnerJump() {
+  if ($('#error').classList.contains('hidden')) return;
+  if (Runner.over) {
+    if (Date.now() - Runner.overAt < 600) return;     // evita reiniciar sin querer al chocar
+    resetRunner(); Runner.ready = false; return;
+  }
+  Runner.ready = false;
+  if (Runner.p.ground) { Runner.p.vy = -11.6; Runner.p.ground = false; }
+}
+cv.addEventListener('pointerdown', (e) => { e.preventDefault(); runnerJump(); });
+window.addEventListener('resize', () => { if (Runner.on) { runnerSize(); if (Runner.p.ground) Runner.p.y = groundY() - CAT_BOX.h; } });
+$('#errMore').addEventListener('click', () => {
+  const info = $('#errInfo');
+  info.hidden = !info.hidden;
+  $('#errMore').setAttribute('aria-expanded', String(!info.hidden));
+});
+
+function cssVar(n) { return getComputedStyle(document.body).getPropertyValue(n).trim(); }
+
+function drawViole(ctx, x, y, t, mode) {   // mode: idle | run | air | dead
+  const fur = '#f3f1ec', patch = '#101014';
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(RUN_S, RUN_S); ctx.translate(-29, -4);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const solid = (p, lw) => { ctx.fillStyle = fur; ctx.fill(p); ctx.strokeStyle = patch; ctx.lineWidth = lw; ctx.stroke(p); };
+  const rot = (px, py, a, fn) => { ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.translate(-px, -py); fn(); ctx.restore(); };
+  const swing = mode === 'run' ? Math.sin(t * 0.42) * 0.45 : 0;
+  const air = mode === 'air';
+  // contorno claro muy sutil para que el negro no se pierda en el fondo
+  ctx.shadowColor = 'rgba(255,255,255,.35)'; ctx.shadowBlur = 1.5;
+  rot(48, 60, air ? -0.3 : Math.sin(t * 0.08) * 0.12, () => { solid(VP.tail, 3); ctx.fillStyle = patch; ctx.fill(VP.tailPatch); });
+  rot(52, 74, air ? 0.55 : -swing, () => solid(VP.legB1, 2.8));
+  rot(85, 74, air ? -0.45 : -swing, () => solid(VP.legB2, 2.8));
+  solid(VP.body, 3); ctx.fillStyle = patch; ctx.fill(VP.bodyPatch);
+  rot(50, 73, air ? 0.65 : swing, () => solid(VP.legA1, 2.8));
+  rot(92, 73, air ? -0.6 : swing, () => solid(VP.legA2, 2.8));
+  solid(VP.earR, 2.6); solid(VP.head, 3);
+  ctx.fillStyle = patch; ctx.fill(VP.headPatch); ctx.fill(VP.earL);
+  ctx.shadowBlur = 0;
+  if (mode === 'dead') {
+    ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(108, 40); ctx.lineTo(118, 50); ctx.moveTo(118, 40); ctx.lineTo(108, 50); ctx.stroke();
+  } else {
+    const blink = mode === 'idle' && t % 260 > 250;
+    if (blink) { ctx.strokeStyle = patch; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(103, 45); ctx.quadraticCurveTo(113, 49, 121, 45); ctx.stroke(); }
+    else {
+      ctx.fillStyle = '#f2c14e'; ctx.fill(VP.eye); ctx.strokeStyle = patch; ctx.lineWidth = 2.2; ctx.stroke(VP.eye);
+      ctx.lineWidth = 2.8; ctx.beginPath(); ctx.moveTo(115, 40); ctx.lineTo(115, 48); ctx.stroke();
+    }
+  }
+  ctx.strokeStyle = patch; ctx.lineWidth = 2.3; ctx.stroke(VP.mouth);
+  ctx.restore();
+}
+
+function drawObstacle(ctx, o, G, c) {
+  if (o.kind === 'yarn') {                 // ovillo de lana con su hilo suelto
+    const cx = o.x + o.w / 2, cy = G - o.h / 2, r = o.h / 2;
+    ctx.strokeStyle = c.accent; ctx.lineWidth = 1.4; ctx.globalAlpha = .6;
+    ctx.beginPath(); ctx.moveTo(cx + r * .6, G - 1); ctx.quadraticCurveTo(cx + r + 8, G - 6, cx + r + 16, G - 1); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = c.accent; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.32)'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.arc(cx - 2, cy + 1, r * .62, -.6, 2.2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + 3, cy - 2, r * .4, 2.4, 5.2); ctx.stroke();
+  } else {                                 // tele antigua con antena
+    const top = G - o.h + 9;
+    ctx.strokeStyle = c.accent; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(o.x + o.w / 2, top); ctx.lineTo(o.x + 4, G - o.h); ctx.moveTo(o.x + o.w / 2, top); ctx.lineTo(o.x + o.w - 4, G - o.h); ctx.stroke();
+    ctx.fillStyle = c.surface; ctx.strokeStyle = c.line; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(o.x, top, o.w, o.h - 12, 5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.roundRect(o.x + 4, top + 4, o.w - 12, o.h - 20, 3); ctx.fill();
+    ctx.fillStyle = c.accent; ctx.fillRect(o.x + o.w - 6, top + 5, 2.5, 2.5);
+    ctx.strokeStyle = c.line; ctx.beginPath(); ctx.moveTo(o.x + 6, G - 3); ctx.lineTo(o.x + 4, G); ctx.moveTo(o.x + o.w - 6, G - 3); ctx.lineTo(o.x + o.w - 4, G); ctx.stroke();
+  }
+}
+
+function runnerLoop() {
+  if (!Runner.on || $('#error').classList.contains('hidden')) { Runner.on = false; return; }
+  const ctx = cv.getContext('2d'), c = Runner.colors;
+  const { W, H } = Runner, G = groundY(), p = Runner.p;
+  Runner.t++;
+  ctx.clearRect(0, 0, W, H);
+
+  // cielo con puntitos lejanos (se mueven lento) y suelo con polvo (se mueve rápido)
+  const drift = Runner.ready ? Runner.t * 0.3 : Runner.frame * Runner.speed;
+  ctx.fillStyle = c.line;
+  for (let i = 0; i < 12; i++) {
+    const sx = ((i * 173 - drift * 0.12) % W + W) % W, sy = 16 + (i * 37) % (G - 80);
+    ctx.globalAlpha = 0.25 + (i % 3) * 0.12; ctx.fillRect(sx, sy, 1.6, 1.6);
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = c.line; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, G); ctx.lineTo(W, G); ctx.stroke();
+  for (let i = 0; i < 16; i++) {
+    const dx = ((i * 97 - drift) % W + W) % W;
+    ctx.fillRect(dx, G + 7 + (i % 3) * 5, 3 + (i % 2) * 3, 1.5);
+  }
+
+  if (!Runner.over && !Runner.ready) {
+    Runner.frame++;
+    Runner.score += 0.15;
+    if (Runner.score > Runner.hi) Runner.hi = Runner.score;
+    Runner.speed = Math.min(10, 5 + Math.floor(Runner.score / 120) * 0.4);
+    p.vy += 0.62; p.y += p.vy;
+    if (p.y >= G - CAT_BOX.h) { p.y = G - CAT_BOX.h; p.vy = 0; p.ground = true; }
+    const last = Runner.obs[Runner.obs.length - 1];
+    if ((!last || W - last.x > 190 + Runner.speed * 16) && Math.random() < 0.03) {
+      const tv = Math.random() < 0.4;
+      Runner.obs.push({ x: W + 10, w: tv ? 26 : 22, h: tv ? 32 : 22, kind: tv ? 'tv' : 'yarn' });
+    }
+    const bx = p.x + 16 * RUN_S, bw = 84 * RUN_S, by = p.y + 30 * RUN_S, pad = 4;
+    for (let i = Runner.obs.length - 1; i >= 0; i--) {
+      const o = Runner.obs[i];
+      o.x -= Runner.speed;
+      const oy = G - o.h;
+      if (bx + pad < o.x + o.w - pad && bx + bw - pad > o.x + pad && by + pad < oy + o.h && p.y + CAT_BOX.h - pad > oy + pad) {
+        Runner.over = true; Runner.overAt = Date.now();
+        Store.set('runnerHi', Math.floor(Runner.hi));
+      }
+      if (o.x + o.w < -30) Runner.obs.splice(i, 1);
+    }
+  }
+  for (const o of Runner.obs) drawObstacle(ctx, o, G, c);
+  const mode = Runner.over ? 'dead' : Runner.ready ? 'idle' : p.ground ? 'run' : 'air';
+  drawViole(ctx, p.x, p.y, Runner.ready ? Runner.t : Runner.frame, mode);
+
+  // textos: discretos y dentro del propio juego
+  const pad5 = (n) => String(Math.floor(n)).padStart(5, '0');
+  ctx.textAlign = 'right'; ctx.fillStyle = c.faint; ctx.font = '600 11px ui-monospace, Menlo, monospace';
+  if (!Runner.ready || Runner.hi > 0) ctx.fillText(`HI ${pad5(Runner.hi)}   ${pad5(Runner.score)}`, W - 18, 22);
+  ctx.textAlign = 'center';
+  if (Runner.ready) {
+    ctx.fillStyle = c.muted; ctx.font = '500 15px Fredoka, Inter, sans-serif';
+    ctx.fillText('Toca para jugar con Viole', W / 2, H * 0.32);
+    ctx.fillStyle = c.faint; ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('mientras vuelve la señal', W / 2, H * 0.32 + 20);
+  } else if (Runner.over) {
+    ctx.fillStyle = c.accent; ctx.font = '600 16px Fredoka, Inter, sans-serif';
+    ctx.fillText('¡Miau! Otra vez', W / 2, H * 0.32);
+    ctx.fillStyle = c.faint; ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Toca para volver a jugar', W / 2, H * 0.32 + 20);
+  }
+  Runner.raf = requestAnimationFrame(runnerLoop);
+}
+
+/* ---------- 8. DIÁLOGOS, MENÚS, TECLADO ---------- */
+function openSide() { document.body.classList.add('side-open'); }
+function closeSide() { document.body.classList.remove('side-open'); }
+$('#btnSide').addEventListener('click', () => {
+  if (window.innerWidth < 900) { document.body.classList.toggle('side-open'); return; }
+  state.settings.sideCollapsed = !state.settings.sideCollapsed;
+  document.body.classList.toggle('side-collapsed', state.settings.sideCollapsed);
+  saveSettings();
+  setTimeout(catRefresh, 60);
+});
+$('#scrim').addEventListener('click', closeSide);
+$('#listsBox').addEventListener('toggle', () => { state.settings.listsOpen = $('#listsBox').open; saveSettings(); });
+
+$('#q').addEventListener('input', applyFilters);
+$('#qClear').addEventListener('click', () => { $('#q').value = ''; applyFilters(); $('#q').focus(); });
+$('#group').addEventListener('change', (e) => { state.settings.group = e.target.value; saveSettings(); applyFilters(); });
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
+  state.settings.tab = t.dataset.tab; saveSettings(); renderTabs(); applyFilters();
+}));
+
+$('#btnPrev').addEventListener('click', () => zap(-1));
+$('#btnNext').addEventListener('click', () => zap(1));
+$('#btnFav').addEventListener('click', () => toggleFavorite(state.current));
+$('#btnFs').addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && screen.orientation && screen.orientation.unlock) try { screen.orientation.unlock(); } catch {} });
+
+// Menú ⋯ del reproductor
+const menu = $('#menuTools');
+document.querySelectorAll('.android-only').forEach((n) => n.classList.toggle('hidden', !IS_ANDROID));
+$('#btnTools').addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+document.addEventListener('click', (e) => { if (!e.target.closest('.menu-wrap')) menu.classList.add('hidden'); });
+menu.addEventListener('click', async (e) => {
+  const item = e.target.closest('[data-act]');
+  if (!item) return;
+  menu.classList.add('hidden');
+  const act = item.dataset.act;
+  if (!state.current) { toast('Primero elige un canal'); return; }
+  if (act === 'retry') playChannel(state.current);
+  if (act === 'native') {
+    if (!canNativeHls()) toast('Este navegador no tiene reproductor HLS propio. Usa "Copiar enlace" y ábrelo en VLC o mpv.', true);
+    else playChannel(state.current, { native: true });
+  }
+  if (act === 'copy') copyCurrentUrl();
+  if (act === 'external') openExternal();
+  if (act === 'pip') {
+    try {
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else if (video.readyState >= 1) await video.requestPictureInPicture();
+      else toast('Espera a que el canal empiece a reproducirse');
+    } catch { toast('La ventana flotante no está disponible aquí', true); }
+  }
+});
+
+// Diálogos
+document.querySelectorAll('dialog [data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
+document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
+
+$('#btnAdd').addEventListener('click', () => { $('#addName').value = ''; $('#dlgAdd').showModal(); });
+$('#addFile').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  const name = $('#addName').value.trim() || f.name.replace(/\.(m3u8?|txt)$/i, '');
+  if (await addPlaylist(name, await f.text())) $('#dlgAdd').close();
+});
+$('#addUrlBtn').addEventListener('click', async () => {
+  const url = safeHttpUrl($('#addUrl').value);
+  if (!url) { toast('Escribe un enlace que empiece por https://', true); return; }
+  const btn = $('#addUrlBtn'); btn.disabled = true; btn.textContent = 'Descargando…';
+  try {
+    const text = await fetchListText(url);
+    const name = $('#addName').value.trim() || new URL(url).hostname;
+    if (await addPlaylist(name, text, url)) { $('#addUrl').value = ''; $('#dlgAdd').close(); }
+  } catch {
+    toast(isMixedContent(url) ? 'Ese enlace es http:// y la app es https://: el navegador lo bloquea. Descárgala y súbela como archivo.'
+                               : 'El servidor no deja descargar la lista desde el navegador. Descárgala y súbela como archivo.', true);
+  } finally { btn.disabled = false; btn.textContent = 'Guardar'; }
+});
+$('#addTextBtn').addEventListener('click', async () => {
+  const text = $('#addText').value.trim();
+  if (!text) { toast('Pega primero el contenido de la lista', true); return; }
+  if (await addPlaylist($('#addName').value.trim() || 'Lista pegada', text)) { $('#addText').value = ''; $('#dlgAdd').close(); }
+});
+
+// Ajustes
+function applySkin() {
+  document.body.dataset.skin = state.settings.skin;
+  document.querySelector('meta[name=theme-color]').content = cssVar('--surface') || '#131316';
+  document.querySelectorAll('#skinSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.skin === state.settings.skin)));
+}
+$('#skinSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-skin]'); if (!b) return;
+  state.settings.skin = b.dataset.skin; saveSettings(); applySkin();
+});
+$('#catToggle').addEventListener('change', (e) => { state.settings.cat = e.target.checked; saveSettings(); applyCatSetting(); });
+$('#btnSettings').addEventListener('click', async () => {
+  $('#kvLists').textContent = `${state.playlists.length} · ${DB.available ? 'guardadas' : 'solo en esta sesión'}`;
+  $('#dlgSettings').showModal();
+  try {
+    const est = await navigator.storage.estimate();
+    $('#kvUsage').textContent = fmtBytes(est.usage);
+    $('#kvPersist').textContent = (await navigator.storage.persisted()) ? 'Activada' : 'No (instálala como app para activarla)';
+  } catch { $('#kvUsage').textContent = '–'; $('#kvPersist').textContent = '–'; }
+});
+$('#btnDemos').addEventListener('click', async () => { await addDemos(); $('#dlgSettings').close(); });
+
+// Copia de seguridad
+$('#btnExport').addEventListener('click', () => {
+  const data = { app: 'viole-iptv', version: 3, exportedAt: new Date().toISOString(), settings: state.settings,
+    favorites: [...state.favorites], recents: state.recents, lastUrl: state.lastUrl,
+    playlists: state.playlists.map(({ id, name, enabled, createdAt, updatedAt, sourceUrl, channels }) => ({ id, name, enabled, createdAt, updatedAt, sourceUrl, channels })) };
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const a = h('a', { href: URL.createObjectURL(blob), download: `viole-iptv-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);   // antes se revocaba al instante y podía cortar la descarga
+  toast('Respaldo descargado');
+});
+$('#importFile').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data.playlists)) throw new Error('formato');
+    let n = 0;
+    for (const raw of data.playlists) {
+      // Acepta respaldos v2 (la versión de Gemini) y v3. Se limpian los datos al entrar.
+      const channels = (raw.channels || []).map((c) => ({ name: String(c.name || 'Canal').slice(0, 140), logo: safeHttpUrl(c.logo), group: String(c.group || 'General').slice(0, 80), url: safeHttpUrl(c.url) })).filter((c) => c.url);
+      if (!channels.length) continue;
+      const pl = { id: String(raw.id || uid()), name: String(raw.name || 'Lista importada').slice(0, 60), enabled: raw.enabled !== false, createdAt: raw.createdAt || Date.now(), updatedAt: Date.now(), sourceUrl: safeHttpUrl(raw.sourceUrl), channels };
+      await DB.put(pl).catch(() => {});
+      const i = state.playlists.findIndex((p) => p.id === pl.id);
+      if (i === -1) state.playlists.push(pl); else state.playlists[i] = pl;
+      n++;
+    }
+    (data.favorites || []).forEach((u) => { const s = safeHttpUrl(u); if (s) state.favorites.add(s); });
+    saveFavorites();
+    if (Array.isArray(data.recents)) { state.recents = [...new Set([...state.recents, ...data.recents.map(safeHttpUrl).filter(Boolean)])].slice(0, 30); Store.set('recents', state.recents); }
+    if (data.skin || (data.settings && data.settings.skin)) { state.settings.skin = (data.settings && data.settings.skin) || data.skin; }
+    saveSettings(); applySkin();
+    refreshAll();
+    askPersistentStorage();
+    $('#dlgSettings').close();
+    toast(`Importadas ${n} listas y ${state.favorites.size} favoritos`);
+  } catch { toast('Ese archivo no es un respaldo válido de Viole IPTV', true); }
+});
+
+// Teclado (Windows / Omarchy)
+window.addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return;
+  if (!$('#error').classList.contains('hidden') && (e.code === 'Space' || e.key === 'ArrowUp')) { e.preventDefault(); runnerJump(); return; }
+  const k = e.key.toLowerCase();
+  if (k === 'f') { e.preventDefault(); toggleFullscreen(); }
+  else if (k === 'm') { video.muted = !video.muted; $('#btnUnmute').classList.add('hidden'); }
+  else if (k === 'r') playChannel(state.current);
+  else if (k === 's') toggleFavorite(state.current);
+  else if (k === '/') { e.preventDefault(); if (window.innerWidth < 900) openSide(); $('#q').focus(); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); zap(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); zap(-1); }
+  else if (e.key === 'Escape') { if (stage.classList.contains('pseudo-fs')) stage.classList.remove('pseudo-fs'); closeSide(); }
+});
+
+/* ---------- 9. ARRANQUE ---------- */
+const DEMOS = [
+  { id: 'demo-1', name: 'Demo 1', text: `#EXTM3U
+#EXTINF:-1 tvg-logo="https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/DW_Logo_2012.svg/200px-DW_Logo_2012.svg.png" group-title="Noticias",DW Español
+https://dwamdstream104.akamaized.net/hls/live/2015530/dwstream104/index.m3u8
+#EXTINF:-1 group-title="Pruebas",Apple · prueba multicalidad
+https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8` },
+  { id: 'demo-2', name: 'Demo 2', text: `#EXTM3U
+#EXTINF:-1 group-title="Cine",Tears of Steel
+https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8
+#EXTINF:-1 group-title="Animación",Big Buck Bunny
+https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8` }
+];
+async function addDemos() {
+  // IDs fijos: añadir las demos dos veces las sustituye, no las duplica.
+  for (const d of DEMOS) await addPlaylist(d.name, d.text, '', d.id);
+}
+
+async function boot() {
+  applySkin();
+  document.body.classList.toggle('side-collapsed', state.settings.sideCollapsed);
+  $('#listsBox').open = state.settings.listsOpen;
+
+  const ok = await DB.open();
+  if (ok) {
+    try { state.playlists = (await DB.all()) || []; } catch { state.playlists = []; }
+    state.playlists.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  } else {
+    $('#storageNote').textContent = '⚠ Sin memoria permanente';
+    toast('Este navegador no permite guardar listas: se perderán al cerrar. Exporta un respaldo.', true);
+  }
+  if (!state.playlists.length && !Store.get('seeded', false)) {   // solo la primera vez
+    Store.set('seeded', true);
+    for (const d of DEMOS) {
+      const pl = { id: d.id, name: d.name, enabled: true, createdAt: Date.now(), updatedAt: Date.now(), sourceUrl: '', channels: parseM3U(d.text) };
+      state.playlists.push(pl); await DB.put(pl).catch(() => {});
+    }
+  }
+  refreshAll();
+
+  // Recuperar el último canal visto
+  const last = state.lastUrl && state.channels.find((c) => c.url === state.lastUrl);
+  if (last) {
+    state.current = last;
+    renderNowPlaying(); markActiveRow();
+    const go = () => playChannel(last);
+    if (window.Hls) go(); else window.addEventListener('load', go, { once: true });
+  }
+
+  applyCatSetting();
+  if (state.settings.cat) setTimeout(() => catSay('Miau 🐾'), 1200);
+}
+document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
+</script>
+</body>
+</html>
