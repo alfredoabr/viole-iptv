@@ -60,6 +60,9 @@ body[data-skin="halloween"] {
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
+/* La app no se selecciona como un texto: el doble toque en Firefox abría «copiar, buscar…» */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea, .err-info p { -webkit-user-select: text; user-select: text; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -326,7 +329,7 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .cat-bubble {
   position: absolute; bottom: 22px; left: calc(100% + 4px);
   background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text);
-  font: 500 12px/1.3 Fredoka, Inter, sans-serif; padding: 6px 10px; border-radius: 10px; white-space: nowrap;
+  font: 500 12.5px/1.3 Fredoka, Inter, sans-serif; padding: 7px 11px; border-radius: 12px; width: max-content; max-width: 230px; white-space: normal; line-height: 1.3;
   opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 2;
 }
 .cat-bubble.show { opacity: 1; }
@@ -340,9 +343,10 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 /* Reglas separadas a propósito: si un navegador no entiende un selector de la lista,
    descarta la regla entera (Firefox no entiende -webkit-full-screen). */
 .stage:-webkit-full-screen .stage-cat { display: block; }
-.stage-cat .cat { width: 158px; height: 120px; bottom: 0; pointer-events: none; cursor: default; }
+.stage-cat .cat { width: 158px; height: 120px; bottom: 0; pointer-events: auto; cursor: pointer; }
 .stage-cat .cat svg { filter: drop-shadow(0 0 .7px rgba(255,255,255,.5)) drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
-.stage-cat .cat-bubble { display: none; }
+.stage-cat .cat-bubble { bottom: 70px; font-size: 16px; max-width: 320px; padding: 10px 14px; border-radius: 14px; background: rgba(19,19,22,.92); }
+.stage.is-fs .stage-cat { display: block; }   /* la pantalla completa la marca JavaScript: más fiable que :fullscreen */
 
 body.no-cat .cat { display: none; }
 body.reduce-motion .cat, body.reduce-motion .cat * { animation: none !important; transition: none !important; }
@@ -1210,7 +1214,7 @@ async function addPlaylist(name, text, sourceUrl = '', fixedId = null) {
   refreshAll();
   askPersistentStorage();
   toast(`Lista "${pl.name}" guardada · ${channels.length.toLocaleString('es')} canales`);
-  catSay('¡Lista nueva! 🐾');
+  catSay(violeLine('list'));
   return true;
 }
 async function togglePlaylist(id) {
@@ -1301,6 +1305,7 @@ function playChannel(ch, opts = {}) {
   Engine.autoReconnects = opts.keepReconnects ? Engine.autoReconnects : 0;
   startStream(ch.url, opts);
   catPoke();
+  if (!opts.keepReconnects && Math.random() < 0.3) setTimeout(() => catSay(violeLine('zap')), 900);
 }
 
 function startStream(url, { native = false } = {}) {
@@ -1449,7 +1454,7 @@ function togglePlay() {
     const live = Engine.hls && Engine.hls.liveSyncPosition;
     if (live && video.currentTime < live - 15) video.currentTime = live;
     video.play().catch(() => {});
-  } else video.pause();
+  } else { video.pause(); if (Math.random() < 0.5) setTimeout(() => catSay(violeLine('pause')), 300); }
 }
 function toggleMute() {
   video.muted = !video.muted;
@@ -1495,6 +1500,7 @@ function showError(kind) {
   if (kind !== 'mixed' && canNativeHls()) add('Reproductor del sistema', 'i-play', () => playChannel(state.current, { native: true }));
   add('Copiar enlace', 'i-copy', copyCurrentUrl, kind === 'mixed');
   if (IS_ANDROID) add('Abrir en otra app', 'i-ext', openExternal);
+  setTimeout(() => catSay(violeLine('error')), 900);
   $('#errInfo').hidden = true;
   $('#errMore').setAttribute('aria-expanded', 'false');
   $('#error').classList.remove('hidden');
@@ -1514,7 +1520,8 @@ function openExternal() {
 
 /* ---------- Pantalla completa ---------- */
 const stage = $('#stage');
-function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement) || stage.classList.contains('pseudo-fs'); }
+function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) || stage.classList.contains('pseudo-fs'); }
+function syncFsClass() { stage.classList.toggle('is-fs', isFullscreen()); }
 // Si se usa el botón de pantalla completa del propio vídeo (Firefox lo muestra),
 // se intenta pasar a la pantalla completa de la app, donde sí puede aparecer Viole.
 // Si el navegador no lo permite, se queda como está.
@@ -1621,7 +1628,73 @@ async function toggleFullscreen() {
    Cada paseo lleva un número (gen). Si cambia el modo, el paseo viejo se abandona. */
 const Cat = { x: -999, gen: 0, timer: 0, mode: '', peeking: false, lastPeek: 0 };
 const catEl = $('#cat');
-const CAT_LINES = ['Prrr…', 'Miau 🐾', 'Aquí vigilando', 'Buen canal', '¿Otro capítulo?', 'Zzz…'];
+/* Frases de Viole (de «Violento»). Irónico, dramático, nada tierno.
+   Se sacan de una bolsa barajada: no repite hasta haberlas dicho todas. */
+const VIOLE_LINES = {
+  tap: [
+    'Tócame otra vez y el sofá lo paga.',
+    'No soy tierno. Me llamo Violento por algo.',
+    'Esto no es cariño. Es una inspección.',
+    '¿Me tocaste? Anotado. Venganza a las 3:47.',
+    'Sigue así y te desordeno los favoritos.',
+    'Mi agenda: dormir, juzgarte, dormir más.',
+    'Te quiero. Mentira. Comida.',
+    'Estoy afilando las uñas. Por nada en especial.',
+    'Si buscas ternura, cambia de lista.',
+    'Tengo 9 vidas y ninguna para escucharte.',
+    'Ese vaso de la mesa me está mirando raro.',
+    'No me sigas, no soy influencer. Bueno, sí.',
+    'Ronroneo, pero es una amenaza.',
+    'Lo rompí yo. Y lo volvería a hacer.',
+    'Modo avión: activado. El avión eres tú.',
+    'Pulsa otra vez. Te reto.',
+    'Mi pelo ya está en tu ropa negra. Gané.',
+    'Los lunes los inventaron los perros.'
+  ],
+  zap: [
+    '¿Otro canal? Decide algo en tu vida.',
+    'El algoritmo soy yo. Y digo que no.',
+    'Cambia de canal o cambio de dueño.',
+    'Este también es malo. Siguiente, cobarde.',
+    'Haces zapping como yo cazo moscas: fatal.',
+    'Ponme algo con pájaros o me voy.',
+    'Ni Netflix sabe qué quieres. Yo tampoco.'
+  ],
+  error: [
+    'Sin señal. Yo no fui. Esta vez.',
+    'Mordí el cable. Es broma. ¿O no?',
+    'El servidor me tiene miedo. Normal.',
+    'Tu wifi y yo: desaparecemos cuando más nos necesitas.',
+    'Se cayó. Como todo lo que toco.'
+  ],
+  list: [
+    'Más canales para ignorar. Perfecto.',
+    'Lista guardada. No me pidas que la vea.',
+    '¿Otra lista? Acumulas como yo pelos en tu ropa.'
+  ],
+  hello: [
+    'Llegó el jefe. Siéntate.',
+    'Volviste. Qué decepción tan predecible.',
+    'Tú enciendes la tele. Yo enciendo el caos.'
+  ],
+  pause: [
+    'Pausa. Por fin algo que haces bien.',
+    'Pausaste. Ahora dame comida.',
+    'Silencio. Así me gusta.'
+  ],
+  peek: [
+    'Solo vine a juzgar.',
+    'Sigan viendo. Yo vigilo.',
+    'Nadie me invitó. Por eso vine.',
+    'Me aburrí. Me voy.',
+    'Ese actor no me convence.'
+  ]
+};
+const lineBags = {};
+function violeLine(kind) {
+  if (!lineBags[kind] || !lineBags[kind].length) lineBags[kind] = [...VIOLE_LINES[kind]].sort(() => Math.random() - 0.5);
+  return lineBags[kind].pop();
+}
 const mqPortrait = window.matchMedia('(orientation: portrait)');
 const mqTouch = window.matchMedia('(pointer: coarse)');
 
@@ -1680,7 +1753,12 @@ async function catRun(firstDelay) {
     } else {
       catSet(-catW() - 20, 0);
     }
-    if (REDUCED_MOTION) { if (!isFullscreen()) catSet(max * 0.5, 0); return; }   // sin animaciones: quieta, pero a la vista
+    if (REDUCED_MOTION) {                                  // sin animaciones: quieto, pero a la vista
+      if (!isFullscreen()) { catSet(max * 0.5, 0); return; }
+      catSet(max * 0.12, 0);
+      if (await catSleep(6000, gen)) catSet(-catW() - 20, 0);
+      return;
+    }
     let delay = firstDelay ?? 1500;
     for (;;) {
       if (!(await catSleep(delay, gen))) return;
@@ -1723,7 +1801,8 @@ async function catPeek(gen) {
   let ms = catWalkTo(stop, speed);
   if (!(await catSleep(ms, gen))) return false;
   catStop();
-  if (!(await catSleep(3000 + Math.random() * 1500, gen))) return false; // se queda mirando
+  if (Math.random() < 0.4) catSay(violeLine('peek'));
+  if (!(await catSleep(3500 + Math.random() * 1500, gen))) return false; // se queda mirando
   ms = catWalkTo(out, speed);
   if (!(await catSleep(ms, gen))) return false;
   catStop();
@@ -1749,7 +1828,7 @@ function catSay(text) {
   b.textContent = text;
   b.classList.add('show');
   clearTimeout(b._t);
-  b._t = setTimeout(() => b.classList.remove('show'), 2600);
+  b._t = setTimeout(() => b.classList.remove('show'), Math.min(6000, 2200 + text.length * 55));   // más largo, más tiempo
 }
 function applyCatSetting() {
   document.body.classList.toggle('no-cat', !state.settings.cat);
@@ -1757,7 +1836,7 @@ function applyCatSetting() {
   if (state.settings.cat) catRun();
   else { Cat.gen++; clearTimeout(Cat.timer); }
 }
-catEl.addEventListener('click', () => catSay(CAT_LINES[Math.floor(Math.random() * CAT_LINES.length)]));
+catEl.addEventListener('click', (e) => { e.stopPropagation(); catSay(violeLine('tap')); });
 
 // Tocar la barra llama a Viole: camina hacia donde tocas (o se asoma, si estaba escondida).
 async function catGoTo(x) {
@@ -1766,7 +1845,7 @@ async function catGoTo(x) {
   const ms = catWalkTo(Math.max(0, Math.min(catMax(), x - catW() / 2)), 100);
   if (!(await catSleep(ms, gen))) return;
   catStop();
-  catSay('Miau 🐾');
+  catSay(violeLine('tap'));
   catRun(Cat.mode === 'patrol' ? 4000 : 15000);
 }
 $('#catTrack').addEventListener('pointerdown', (e) => {
@@ -1774,7 +1853,7 @@ $('#catTrack').addEventListener('pointerdown', (e) => {
   if (Cat.mode === 'peek') { if (!Cat.peeking) catRun(0); return; }
   catGoTo(e.clientX - $('#catTrack').getBoundingClientRect().left);
 });
-['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => setTimeout(catRefresh, 120)));
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => { syncFsClass(); setTimeout(catRefresh, 120); }));
 new MutationObserver(catRefresh).observe(stage, { attributes: true, attributeFilter: ['class'] });   // pseudo pantalla completa
 mqPortrait.addEventListener('change', () => setTimeout(catRefresh, 250));
 let catResizeT;
@@ -2207,7 +2286,7 @@ async function boot() {
   updateMotion();
   syncMediaButtons();
   applyCatSetting();
-  if (state.settings.cat) setTimeout(() => catSay('Miau 🐾'), 1200);
+  if (state.settings.cat) setTimeout(() => catSay(violeLine('hello')), 1600);
 }
 function deviceSummary() {
   // Para diagnosticar problemas: dime qué pone aquí si algo no se ve bien.
