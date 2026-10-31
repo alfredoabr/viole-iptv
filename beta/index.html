@@ -245,7 +245,7 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 
 /* Escenario de vídeo */
 .stage { flex: 1; min-height: 0; position: relative; background: #000; display: grid; place-items: center; overflow: hidden; }
-.stage video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+.stage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
 .stage.pseudo-fs { position: fixed; inset: 0; z-index: 100; }
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; z-index: 5; }
 .loading { background: rgba(0,0,0,.45); pointer-events: none; }
@@ -290,6 +290,11 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .dock .zap { display: flex; gap: 6px; flex: none; }
 .zap .btn { width: 40px; height: 36px; padding: 0; }
 .zap .btn svg { width: 22px; height: 22px; }
+.media { display: flex; gap: 6px; flex: none; }
+.media .btn { width: 40px; height: 36px; padding: 0; }
+.media .btn svg.i { width: 20px; height: 20px; }
+.media .btn.fill svg.i { fill: currentColor; }
+.media .btn.is-off { color: var(--muted); }
 .dock-info { flex: none; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--muted); }
 .dock-info .res { color: var(--accent); font-weight: 600; }
 
@@ -435,6 +440,9 @@ body.is-beta .beta-tag { display: inline-block; }
   .dock .zap { gap: 8px; }
   .zap .btn { width: 58px; height: 48px; border-radius: 14px; }
   .zap .btn svg { width: 26px; height: 26px; }
+  .media { gap: 8px; }
+  .media .btn { width: 54px; height: 48px; border-radius: 14px; }
+  .media .btn svg.i { width: 24px; height: 24px; }
   .cat { width: 72px; height: 54px; bottom: 4px; }
   .seg button { height: 42px; }
   .more-dots { width: 56px; height: 36px; }
@@ -482,6 +490,8 @@ body.is-beta .beta-tag { display: inline-block; }
   <symbol id="i-up" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
   <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6m0-6 6 6"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
   <!-- Cara de Viole: blanca, mancha negra sobre el ojo y una oreja, ojo amarillo -->
@@ -639,6 +649,11 @@ body.is-beta .beta-tag { display: inline-block; }
         </button>
       </div>
 
+      <div class="media">
+        <button class="btn fill" id="btnPlay" title="Reproducir (Espacio)" aria-label="Reproducir"><svg class="i"><use href="#i-play"/></svg></button>
+        <button class="btn" id="btnMute" title="Silenciar (M)" aria-label="Silenciar"><svg class="i"><use href="#i-vol"/></svg></button>
+      </div>
+
       <div class="dock-info">
         <span class="res" id="res"></span>
         <span class="status-text" id="statusText"></span>
@@ -711,6 +726,7 @@ body.is-beta .beta-tag { display: inline-block; }
       <div class="kv"><span>Listas guardadas</span><b id="kvLists">–</b></div>
       <div class="kv"><span>Espacio usado</span><b id="kvUsage">–</b></div>
       <div class="kv"><span>Protección contra borrado automático</span><b id="kvPersist">–</b></div>
+      <div class="kv"><span>Este dispositivo</span><b id="kvDevice" style="text-align:right">–</b></div>
       <div class="grp-row"><button class="btn" id="btnDemos" style="flex:1">Añadir listas de prueba</button></div>
     </div>
   </div>
@@ -1315,6 +1331,40 @@ video.addEventListener('volumechange', () => {
 });
 $('#btnUnmute').addEventListener('click', () => { video.muted = false; $('#btnUnmute').classList.add('hidden'); state.settings.muted = false; saveSettings(); });
 
+/* ---------- Controles propios: pausa y sonido ----------
+   No dependemos de los controles del navegador: en algunas tablets no aparecen. */
+function setBtnIcon(btn, id) { btn.querySelector('use').setAttribute('href', '#' + id); }
+function syncMediaButtons() {
+  const paused = video.paused || !Engine.mode;
+  const play = $('#btnPlay'), mute = $('#btnMute');
+  setBtnIcon(play, paused ? 'i-play' : 'i-pause');
+  play.title = paused ? 'Reproducir (Espacio)' : 'Pausar (Espacio)';
+  play.setAttribute('aria-label', paused ? 'Reproducir' : 'Pausar');
+  setBtnIcon(mute, video.muted ? 'i-mute' : 'i-vol');
+  mute.title = video.muted ? 'Activar sonido (M)' : 'Silenciar (M)';
+  mute.setAttribute('aria-label', video.muted ? 'Activar sonido' : 'Silenciar');
+  mute.classList.toggle('is-off', video.muted);
+}
+function togglePlay() {
+  if (!state.current) { toast('Primero elige un canal'); return; }
+  if (!Engine.mode) { playChannel(state.current); return; }      // tras un error: vuelve a conectar
+  if (video.paused) {
+    // En directo, si estuvo mucho rato en pausa, vuelve al momento actual de la emisión
+    const live = Engine.hls && Engine.hls.liveSyncPosition;
+    if (live && video.currentTime < live - 15) video.currentTime = live;
+    video.play().catch(() => {});
+  } else video.pause();
+}
+function toggleMute() {
+  video.muted = !video.muted;
+  $('#btnUnmute').classList.add('hidden');
+  state.settings.muted = video.muted;
+  saveSettings();
+}
+$('#btnPlay').addEventListener('click', togglePlay);
+$('#btnMute').addEventListener('click', toggleMute);
+['play', 'pause', 'playing', 'volumechange', 'emptied'].forEach((ev) => video.addEventListener(ev, syncMediaButtons));
+
 function setupQuality(levels) {
   const row = $('#qualityRow'), sel = $('#quality');
   if (!levels || levels.length <= 1) { row.classList.add('hidden'); return; }
@@ -1453,12 +1503,12 @@ async function catRun(firstDelay) {
     } else {
       catSet(-catW() - 20, 0);
     }
-    if (REDUCED_MOTION) return;
-    let delay = firstDelay ?? 2500;
+    if (REDUCED_MOTION) { if (!isFullscreen()) catSet(max * 0.5, 0); return; }   // sin animaciones: quieta, pero a la vista
+    let delay = firstDelay ?? 1500;
     for (;;) {
       if (!(await catSleep(delay, gen))) return;
       if (!document.hidden && !(await catPeek(gen))) return;
-      delay = isFullscreen() ? 180000 + Math.random() * 120000 : 60000 + Math.random() * 60000;
+      delay = isFullscreen() ? 180000 + Math.random() * 120000 : 40000 + Math.random() * 40000;
     }
   }
 
@@ -1488,7 +1538,7 @@ async function catPeek(gen) {
   const speed = isFullscreen() ? 75 : 40;
   const fromLeft = Math.random() < 0.5;
   const out = fromLeft ? -cw - 20 : W + 20;
-  const into = Math.min(W * (0.15 + Math.random() * 0.2), speed * 4.5);   // como mucho ~4,5 s caminando
+  const into = Math.min(W * (0.25 + Math.random() * 0.2), speed * 6);     // como mucho ~6 s caminando
   const stop = fromLeft ? into : W - cw - into;
   catSet(out, 0);
   await nextFrame();
@@ -1496,7 +1546,7 @@ async function catPeek(gen) {
   let ms = catWalkTo(stop, speed);
   if (!(await catSleep(ms, gen))) return false;
   catStop();
-  if (!(await catSleep(2200 + Math.random() * 1500, gen))) return false; // se queda mirando
+  if (!(await catSleep(3000 + Math.random() * 1500, gen))) return false; // se queda mirando
   ms = catWalkTo(out, speed);
   if (!(await catSleep(ms, gen))) return false;
   catStop();
@@ -1531,6 +1581,22 @@ function applyCatSetting() {
   else { Cat.gen++; clearTimeout(Cat.timer); }
 }
 catEl.addEventListener('click', () => catSay(CAT_LINES[Math.floor(Math.random() * CAT_LINES.length)]));
+
+// Tocar la barra llama a Viole: camina hacia donde tocas (o se asoma, si estaba escondida).
+async function catGoTo(x) {
+  const gen = ++Cat.gen;
+  clearTimeout(Cat.timer);
+  const ms = catWalkTo(Math.max(0, Math.min(catMax(), x - catW() / 2)), 70);
+  if (!(await catSleep(ms, gen))) return;
+  catStop();
+  catSay('Miau 🐾');
+  catRun(Cat.mode === 'patrol' ? 4000 : 15000);
+}
+$('#catTrack').addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.cat') || !state.settings.cat || REDUCED_MOTION) return;
+  if (Cat.mode === 'peek') { if (!Cat.peeking) catRun(0); return; }
+  catGoTo(e.clientX - $('#catTrack').getBoundingClientRect().left);
+});
 ['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => setTimeout(catRefresh, 120)));
 new MutationObserver(catRefresh).observe(stage, { attributes: true, attributeFilter: ['class'] });   // pseudo pantalla completa
 mqPortrait.addEventListener('change', () => setTimeout(catRefresh, 250));
@@ -1831,6 +1897,7 @@ $('#skinSeg').addEventListener('click', (e) => {
 $('#catToggle').addEventListener('change', (e) => { state.settings.cat = e.target.checked; saveSettings(); applyCatSetting(); });
 $('#btnSettings').addEventListener('click', async () => {
   $('#kvLists').textContent = `${state.playlists.length} · ${DB.available ? 'guardadas' : 'solo en esta sesión'}`;
+  $('#kvDevice').textContent = deviceSummary();
   $('#dlgSettings').showModal();
   try {
     const est = await navigator.storage.estimate();
@@ -1886,7 +1953,8 @@ window.addEventListener('keydown', (e) => {
   if (!$('#error').classList.contains('hidden') && (e.code === 'Space' || e.key === 'ArrowUp')) { e.preventDefault(); runnerJump(); return; }
   const k = e.key.toLowerCase();
   if (k === 'f') { e.preventDefault(); toggleFullscreen(); }
-  else if (k === 'm') { video.muted = !video.muted; $('#btnUnmute').classList.add('hidden'); }
+  else if (k === 'm') toggleMute();
+  else if (e.code === 'Space' && !e.target.closest('button')) { e.preventDefault(); togglePlay(); }
   else if (k === 'r') playChannel(state.current);
   else if (k === 's') toggleFavorite(state.current);
   else if (k === '/') { e.preventDefault(); if (window.innerWidth < 900) openSide(); $('#q').focus(); }
@@ -1944,9 +2012,24 @@ async function boot() {
     if (window.Hls) go(); else window.addEventListener('load', go, { once: true });
   }
 
+  syncMediaButtons();
   applyCatSetting();
   if (state.settings.cat) setTimeout(() => catSay('Miau 🐾'), 1200);
 }
+function deviceSummary() {
+  // Para diagnosticar problemas: dime qué pone aquí si algo no se ve bien.
+  const m = navigator.userAgent.match(/(Firefox|EdgA?|OPR|SamsungBrowser|Chrome)\/(\d+)/);
+  const name = m ? (({ Edg: 'Edge', EdgA: 'Edge', OPR: 'Opera', SamsungBrowser: 'Samsung' })[m[1]] || m[1]) + ' ' + m[2] : 'Navegador';
+  return [name, mqTouch.matches ? 'táctil' : 'ratón', mqPortrait.matches ? 'vertical' : 'horizontal', `${innerWidth}×${innerHeight}`,
+          REDUCED_MOTION ? 'animaciones reducidas' : null, 'Viole: ' + (Cat.mode || '–'),
+          navigator.serviceWorker && navigator.serviceWorker.controller ? 'instalable ✓' : null].filter(Boolean).join(' · ');
+}
+
+// Service worker: permite "Instalar" la app. Solo vigila la apertura de la página; no guarda vídeos.
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register(IS_BETA ? '../sw.js' : 'sw.js').catch(() => {});
+}
+
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
 </script>
 </body>
