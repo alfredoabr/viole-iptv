@@ -9,8 +9,9 @@
 <meta name="referrer" content="no-referrer">
 <title>Viole IPTV</title>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -252,16 +253,24 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading p { margin: 14px 0 0; text-align: center; color: var(--muted); font-size: 13px; font-family: Fredoka, Inter, sans-serif; }
 
-.error { background: var(--bg); overflow-y: auto; padding: 20px; }
-.error-card { width: min(560px, 100%); text-align: center; }
-.error h3 { margin: 0 0 6px; font-family: Fredoka, Inter, sans-serif; font-weight: 600; font-size: 18px; }
-.error p { margin: 0 auto 14px; color: var(--muted); font-size: 13px; max-width: 440px; }
-.error-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; }
-.runner { border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 10px; text-align: left; }
-.runner-head { display: flex; justify-content: space-between; font: 600 11px/1 ui-monospace, Menlo, monospace; color: var(--muted); padding: 0 4px 8px; }
-.runner-head b { color: var(--accent); }
-.runner canvas { width: 100%; height: 130px; display: block; border-radius: 10px; background: var(--bg); touch-action: manipulation; cursor: pointer; }
-.runner-hint { font-size: 11px; color: var(--faint); padding: 8px 4px 0; }
+/* Sin señal: solo el juego, fundido con el fondo. El "por qué" queda tras los tres puntos. */
+.error { background: var(--bg); overflow-y: auto; padding: 16px; }
+.game { width: min(760px, 100%); display: flex; flex-direction: column; align-items: center; }
+.game canvas {
+  width: 100%; height: 190px; display: block; cursor: pointer; touch-action: manipulation;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.more-dots {
+  margin-top: 2px; width: 44px; height: 28px; border: 0; border-radius: 99px; background: transparent;
+  color: var(--faint); display: grid; place-items: center; opacity: .55; transition: opacity .2s, background .2s, color .2s;
+}
+.more-dots:hover, .more-dots[aria-expanded="true"] { opacity: 1; color: var(--muted); background: var(--surface-2); }
+.err-info { text-align: center; margin-top: 10px; max-width: 460px; animation: fade-up .22s ease; }
+.err-info h3 { margin: 0 0 4px; font: 600 16px/1.3 Fredoka, Inter, sans-serif; }
+.err-info p { margin: 0 auto 12px; color: var(--muted); font-size: 13px; }
+.error-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+@keyframes fade-up { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 .empty-stage { color: var(--muted); text-align: center; padding: 20px; }
 .empty-stage h3 { color: var(--text); font-family: Fredoka, Inter, sans-serif; font-weight: 600; margin: 10px 0 6px; }
@@ -269,9 +278,9 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .unmute { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6; }
 
 /* =====================================================================
-   5. BARRA INFERIOR (DOCK) + EL PASEO DE VIOLE
-   Viole camina DENTRO de la barra, entre los botones y el estado.
-   Así nunca tapa los controles del vídeo.
+   5. BARRA INFERIOR (DOCK) + VIOLE
+   Viole vive en la barra. En pantalla completa se muda a una franja
+   encima de los controles del vídeo y no intercepta toques.
    ===================================================================== */
 .dock {
   height: 52px; flex: none; display: flex; align-items: center; gap: 10px;
@@ -284,11 +293,11 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .dock-info { flex: none; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--muted); }
 .dock-info .res { color: var(--accent); font-weight: 600; }
 
-.cat-track { flex: 1; align-self: stretch; position: relative; min-width: 0; }
+.cat-track { flex: 1; align-self: stretch; position: relative; min-width: 0; overflow: hidden; }
 .cat {
   position: absolute; left: 0; bottom: 3px; width: 58px; height: 44px;
-  transform: translateX(var(--x, 0px));
-  transition: transform var(--dur, 0s) cubic-bezier(.42,.06,.58,.96);
+  transform: translateX(var(--x, -999px));
+  transition: transform var(--dur, 0s) cubic-bezier(.3,.05,.7,.95);
   cursor: pointer; border: 0; padding: 0; background: transparent;
 }
 .cat svg { width: 100%; height: 100%; overflow: visible; transform: scaleX(var(--dir, 1)); transition: transform .35s ease;
@@ -309,14 +318,21 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 @keyframes nod   { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-2deg); } }
 @keyframes blink { 0%, 95%, 100% { transform: scaleY(0); } 97% { transform: scaleY(1); } }
 .cat-bubble {
-  position: absolute; bottom: 12px; left: calc(100% + 4px); transform: translateX(-4px);
+  position: absolute; bottom: 12px; left: calc(100% + 4px);
   background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text);
   font: 500 12px/1.3 Fredoka, Inter, sans-serif; padding: 6px 10px; border-radius: 10px; white-space: nowrap;
-  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 2;
+  opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 2;
 }
-.cat-bubble.show { opacity: 1; transform: none; }
-.cat.flip .cat-bubble { left: auto; right: calc(100% + 4px); transform: translateX(4px); }
-.cat.flip .cat-bubble.show { transform: none; }
+.cat-bubble.show { opacity: 1; }
+.cat.bubble-left .cat-bubble { left: auto; right: calc(100% + 4px); }
+
+/* Franja de Viole sobre el vídeo (solo en pantalla completa) */
+.stage-cat { display: none; position: absolute; left: 0; right: 0; bottom: 76px; height: 76px; z-index: 4; pointer-events: none; overflow: hidden; }
+.stage:fullscreen .stage-cat, .stage:-webkit-full-screen .stage-cat, .stage.pseudo-fs .stage-cat { display: block; }
+.stage-cat .cat { width: 100px; height: 76px; bottom: 0; pointer-events: none; cursor: default; }
+.stage-cat .cat svg { filter: drop-shadow(0 0 .7px rgba(255,255,255,.5)) drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
+.stage-cat .cat-bubble { display: none; }
+
 body.no-cat .cat { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .cat, .cat * { animation: none !important; transition: none !important; }
@@ -385,6 +401,62 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
   .now { gap: 10px; }
   .dock-info .status-text { display: none; }
 }
+/* Etiqueta de la versión de prueba */
+.beta-tag { display: none; margin-left: 6px; padding: 1px 6px; border-radius: 6px; font: 600 10px/1.4 Inter, sans-serif; letter-spacing: .5px; text-transform: uppercase; vertical-align: 2px; color: var(--accent-ink); background: var(--accent); }
+body.is-beta .beta-tag { display: inline-block; }
+
+/* =====================================================================
+   8. PANTALLAS TÁCTILES (Xiaomi Pad 6): todo se toca con el dedo, mínimo ~44 px
+   ===================================================================== */
+@media (pointer: coarse) {
+  .top { height: 62px; }
+  .btn { height: 44px; padding: 0 14px; border-radius: 12px; }
+  .btn.icon { width: 44px; }
+  .field { height: 44px; font-size: 15px; }
+  .search .clear { width: 38px; height: 38px; }
+  .tabs { padding: 4px; }
+  .tab { height: 38px; font-size: 13.5px; }
+  .lists > summary { padding: 14px; }
+  .pl { padding: 8px 6px 8px 12px; }
+  .pl input[type=checkbox] { width: 20px; height: 20px; }
+  .pl .btn.icon { width: 42px; height: 42px; }
+  .row { min-height: 62px; padding: 9px 8px 9px 14px; gap: 12px; }
+  .logo { width: 44px; height: 44px; border-radius: 10px; }
+  .row-name { font-size: 15px; }
+  .row-meta { font-size: 12.5px; }
+  .row .fav { width: 44px; height: 44px; border-radius: 10px; }
+  .row .fav svg.i { width: 20px; height: 20px; }
+  .now { min-height: 68px; }
+  .now-actions { gap: 8px; }
+  .menu { min-width: 280px; }
+  .menu-item { padding: 13px 12px; font-size: 14.5px; }
+  .menu-quality select { height: 40px; }
+  .dock { height: 66px; gap: 12px; }
+  .dock .zap { gap: 8px; }
+  .zap .btn { width: 58px; height: 48px; border-radius: 14px; }
+  .zap .btn svg { width: 26px; height: 26px; }
+  .cat { width: 72px; height: 54px; bottom: 4px; }
+  .seg button { height: 42px; }
+  .more-dots { width: 56px; height: 36px; }
+  .game canvas { height: 210px; }
+}
+
+/* =====================================================================
+   9. VERTICAL: vídeo arriba (16:9), Viole en la barra, canales debajo.
+   Como YouTube en el móvil. El panel deja de ser un cajón.
+   ===================================================================== */
+@media (orientation: portrait) and (max-width: 1100px) {
+  .body { flex-direction: column; }
+  .main { order: 1; flex: none; }
+  .stage { flex: none; aspect-ratio: 16 / 9; }
+  .side {
+    order: 2; display: flex !important; position: static; inset: auto; z-index: auto;
+    width: auto; flex: 1; min-height: 0; transform: none; transition: none; box-shadow: none;
+    border-right: 0; border-top: 1px solid var(--line);
+  }
+  #btnSide, .scrim { display: none; }
+  .lists-body { max-height: 160px; }
+}
 </style>
 </head>
 
@@ -432,7 +504,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
   <div class="brand">
     <div class="brand-mark"><svg><use href="#viole-head"/></svg></div>
     <div style="min-width:0">
-      <div class="brand-name">Viole <b>IPTV</b></div>
+      <div class="brand-name">Viole <b>IPTV</b><span class="beta-tag">beta</span></div>
       <div class="brand-sub" id="stats">Cargando…</div>
     </div>
   </div>
@@ -496,7 +568,8 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
     </div>
 
     <div class="stage" id="stage">
-      <video id="video" playsinline webkit-playsinline preload="none" controls></video>
+      <video id="video" playsinline webkit-playsinline preload="none" controls controlslist="nofullscreen"></video>
+      <div class="stage-cat" id="stageCatTrack"></div>
 
       <div class="overlay empty-stage" id="emptyStage">
         <div>
@@ -513,14 +586,13 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
       <button class="btn primary unmute hidden" id="btnUnmute"><svg class="i"><use href="#i-mute"/></svg>Activar sonido</button>
 
       <div class="overlay error hidden" id="error">
-        <div class="error-card">
-          <h3 id="errTitle">Sin señal</h3>
-          <p id="errText"></p>
-          <div class="error-actions" id="errActions"></div>
-          <div class="runner">
-            <div class="runner-head"><b>VIOLE RUNNER</b><span><span id="runHi">HI 00000</span> · <span id="runScore">00000</span></span></div>
-            <canvas id="runner"></canvas>
-            <div class="runner-hint">Salta con Espacio o tocando el juego</div>
+        <div class="game">
+          <canvas id="runner" aria-label="Minijuego: Viole salta ovillos mientras vuelve la señal"></canvas>
+          <button class="more-dots" id="errMore" aria-expanded="false" aria-controls="errInfo" title="¿Por qué no carga?" aria-label="Ver por qué no carga el canal"><svg class="i"><use href="#i-dots"/></svg></button>
+          <div class="err-info" id="errInfo" hidden>
+            <h3 id="errTitle">Sin señal</h3>
+            <p id="errText"></p>
+            <div class="error-actions" id="errActions"></div>
           </div>
         </div>
       </div>
@@ -624,7 +696,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
     </div>
     <div class="grp">
       <span class="grp-label">Viole</span>
-      <div class="switch-row"><span>Viole pasea por la barra inferior</span><span class="switch"><input type="checkbox" id="catToggle" aria-label="Mostrar a Viole"></span></div>
+      <div class="switch-row"><span>Viole pasea (y se asoma en pantalla completa)</span><span class="switch"><input type="checkbox" id="catToggle" aria-label="Mostrar a Viole"></span></div>
     </div>
     <div class="grp">
       <span class="grp-label">Copia de seguridad</span>
@@ -648,6 +720,8 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
 
 <script>
 'use strict';
+const IS_BETA = /\/beta\//.test(location.pathname);
+if (IS_BETA) { document.body.classList.add('is-beta'); document.title = 'Viole IPTV β'; }
 /* =========================================================================
    VIOLE IPTV · v3
    Estructura del código (cada bloque tiene una sola responsabilidad):
@@ -1124,6 +1198,7 @@ function playChannel(ch, opts = {}) {
   if (window.innerWidth < 900) closeSide();
   Engine.autoReconnects = opts.keepReconnects ? Engine.autoReconnects : 0;
   startStream(ch.url, opts);
+  catPoke();
 }
 
 function startStream(url, { native = false } = {}) {
@@ -1274,6 +1349,8 @@ function showError(kind) {
   if (kind !== 'mixed' && canNativeHls()) add('Reproductor del sistema', 'i-play', () => playChannel(state.current, { native: true }));
   add('Copiar enlace', 'i-copy', copyCurrentUrl, kind === 'mixed');
   if (IS_ANDROID) add('Abrir en otra app', 'i-ext', openExternal);
+  $('#errInfo').hidden = true;
+  $('#errMore').setAttribute('aria-expanded', 'false');
   $('#error').classList.remove('hidden');
   startRunner();
 }
@@ -1308,42 +1385,140 @@ async function toggleFullscreen() {
 }
 
 /* ---------- 7a. VIOLE PASEA ----------
-   Sutil a propósito: camina despacio (~26 px/s), solo cada 15–35 s,
-   dentro de la barra inferior. Se queda quieta si la pestaña no está visible,
-   si estás en pantalla completa o si el sistema pide "reducir movimiento". */
-const Cat = { x: 0, timer: null, walking: false };
-const catEl = $('#cat'), trackEl = $('#catTrack');
+   Tres maneras de pasear, según cómo estés usando la app:
+   - 'roam'   escritorio: siempre a la vista, camina despacio cada 15–35 s.
+   - 'patrol' en vertical: siempre a la vista, va y viene con pausas cortas.
+   - 'peek'   tablet en horizontal y pantalla completa: se asoma por un borde,
+              camina unos segundos, se queda mirando y se va. Vuelve cada tanto
+              o cuando tocas la pantalla (como mucho una vez cada 45 s).
+   Cada paseo lleva un número (gen). Si cambia el modo, el paseo viejo se abandona. */
+const Cat = { x: -999, gen: 0, timer: 0, mode: '', peeking: false, lastPeek: 0 };
+const catEl = $('#cat');
 const CAT_LINES = ['Prrr…', 'Miau 🐾', 'Aquí vigilando', 'Buen canal', '¿Otro capítulo?', 'Zzz…'];
+const mqPortrait = window.matchMedia('(orientation: portrait)');
+const mqTouch = window.matchMedia('(pointer: coarse)');
 
-function catBounds() { return Math.max(0, trackEl.clientWidth - catEl.offsetWidth); }
-function catPlace(x, seconds) {
-  Cat.x = x;
-  catEl.style.setProperty('--dur', seconds + 's');
+function catMode() {
+  if (isFullscreen()) return 'peek';
+  if (mqPortrait.matches) return 'patrol';
+  if (mqTouch.matches) return 'peek';
+  return 'roam';
+}
+function catTrack() { return isFullscreen() ? $('#stageCatTrack') : $('#catTrack'); }
+function catW() { return catEl.offsetWidth || 58; }
+function catMax() { return Math.max(0, catTrack().clientWidth - catW()); }
+function catSet(x, ms) {
+  catEl.style.setProperty('--dur', (ms / 1000) + 's');
   catEl.style.setProperty('--x', x + 'px');
+  Cat.x = x;
 }
-function catSchedule(delay) {
-  clearTimeout(Cat.timer);
-  if (!state.settings.cat || REDUCED_MOTION) return;
-  Cat.timer = setTimeout(catWalk, delay ?? (15000 + Math.random() * 20000));
-}
-function catWalk() {
-  const max = catBounds();
-  if (document.hidden || isFullscreen() || max < 40) return catSchedule();
-  let target = Math.random() * max;
-  if (Math.abs(target - Cat.x) < 70) target = Cat.x > max / 2 ? Math.random() * (max / 2 - 35) : max / 2 + 35 + Math.random() * (max / 2 - 35);
-  target = Math.max(0, Math.min(max, target));
-  const dist = Math.abs(target - Cat.x);
-  const seconds = Math.max(2.5, dist / 26);
-  catEl.style.setProperty('--dir', target >= Cat.x ? '1' : '-1');
-  catEl.classList.toggle('flip', target < Cat.x);
+function catWalkTo(x, speed) {               // devuelve los ms que tarda en llegar
+  const dist = Math.abs(x - Cat.x);
+  if (dist < 1) return 0;
+  catEl.style.setProperty('--dir', x > Cat.x ? '1' : '-1');
   catEl.classList.add('walking');
-  Cat.walking = true;
-  catPlace(target, seconds);
-  setTimeout(() => { catEl.classList.remove('walking'); Cat.walking = false; catSchedule(); }, seconds * 1000);
+  const ms = (dist / speed) * 1000;
+  catSet(x, ms);
+  return ms;
+}
+function catStop() { catEl.classList.remove('walking'); }
+function catSleep(ms, gen) {                  // espera; devuelve false si el paseo quedó viejo
+  return new Promise((resolve) => { Cat.timer = setTimeout(() => resolve(gen === Cat.gen), ms); });
+}
+const nextFrame = () => new Promise((r) => {          // 2 fotogramas, o 120 ms si la pestaña está en segundo plano
+  let done = false; const go = () => { if (!done) { done = true; r(); } };
+  requestAnimationFrame(() => requestAnimationFrame(go)); setTimeout(go, 120);
+});
+
+async function catRun(firstDelay) {
+  const gen = ++Cat.gen;
+  clearTimeout(Cat.timer);
+  Cat.peeking = false;
+  catStop();
+  const track = catTrack();
+  const moved = catEl.parentElement !== track;
+  if (moved) { track.append(catEl); catSet(-999, 0); }
+  Cat.mode = catMode();
+  if (!state.settings.cat) return;
+  await nextFrame();
+  if (gen !== Cat.gen) return;
+  const max = catMax();
+
+  if (Cat.mode === 'peek') {
+    // Si estaba a la vista (por ejemplo, al girar la tablet), se va caminando.
+    if (!moved && Cat.x >= 0 && Cat.x <= max && !REDUCED_MOTION) {
+      const ms = catWalkTo(Cat.x < max / 2 ? -catW() - 20 : track.clientWidth + 20, 45);
+      if (!(await catSleep(ms, gen))) return;
+      catStop();
+    } else {
+      catSet(-catW() - 20, 0);
+    }
+    if (REDUCED_MOTION) return;
+    let delay = firstDelay ?? 2500;
+    for (;;) {
+      if (!(await catSleep(delay, gen))) return;
+      if (!document.hidden && !(await catPeek(gen))) return;
+      delay = isFullscreen() ? 180000 + Math.random() * 120000 : 60000 + Math.random() * 60000;
+    }
+  }
+
+  // 'roam' y 'patrol': siempre a la vista
+  if (Cat.x < 0 || Cat.x > max) catSet(max * (0.25 + Math.random() * 0.5), 0);
+  if (REDUCED_MOTION) return;
+  const [speed, minW, maxW] = Cat.mode === 'patrol' ? [32, 2500, 6500] : [26, 15000, 35000];
+  let delay = firstDelay ?? (Cat.mode === 'patrol' ? 1500 : 6000);
+  for (;;) {
+    if (!(await catSleep(delay, gen))) return;
+    delay = minW + Math.random() * (maxW - minW);
+    const m = catMax();
+    if (document.hidden || m < 40) continue;
+    let t = Math.random() * m;
+    if (Math.abs(t - Cat.x) < 60) t = Cat.x > m / 2 ? Math.random() * (m / 2 - 30) : m / 2 + 30 + Math.random() * (m / 2 - 30);
+    t = Math.max(0, Math.min(m, t));
+    const ms = catWalkTo(t, speed);
+    if (!(await catSleep(ms, gen))) return;
+    catStop();
+  }
+}
+
+async function catPeek(gen) {
+  const W = catTrack().clientWidth, cw = catW();
+  if (W < cw * 2) return gen === Cat.gen;
+  Cat.peeking = true;
+  const speed = isFullscreen() ? 75 : 40;
+  const fromLeft = Math.random() < 0.5;
+  const out = fromLeft ? -cw - 20 : W + 20;
+  const into = Math.min(W * (0.15 + Math.random() * 0.2), speed * 4.5);   // como mucho ~4,5 s caminando
+  const stop = fromLeft ? into : W - cw - into;
+  catSet(out, 0);
+  await nextFrame();
+  if (gen !== Cat.gen) return false;
+  let ms = catWalkTo(stop, speed);
+  if (!(await catSleep(ms, gen))) return false;
+  catStop();
+  if (!(await catSleep(2200 + Math.random() * 1500, gen))) return false; // se queda mirando
+  ms = catWalkTo(out, speed);
+  if (!(await catSleep(ms, gen))) return false;
+  catStop();
+  Cat.peeking = false;
+  Cat.lastPeek = Date.now();
+  return true;
+}
+
+function catPoke() {
+  // Un toque, un cambio de canal: Viole se asoma (si toca asomarse y hace rato que no lo hace).
+  if (!state.settings.cat || REDUCED_MOTION || Cat.mode !== 'peek' || Cat.peeking) return;
+  if (Date.now() - Cat.lastPeek < 45000) return;
+  catRun(400);
+}
+function catRefresh() {
+  if (catMode() !== Cat.mode || catEl.parentElement !== catTrack()) { catRun(isFullscreen() ? 1500 : undefined); return; }
+  if (Cat.mode !== 'peek' && Cat.x > catMax()) catSet(catMax(), 0);
 }
 function catSay(text) {
-  if (!state.settings.cat) return;
+  if (!state.settings.cat || Cat.x < 0 || Cat.x > catMax() + 1) return;   // si no se ve, no habla
   const b = $('#catBubble');
+  catEl.classList.toggle('bubble-left', Cat.x > catMax() / 2);
   b.textContent = text;
   b.classList.add('show');
   clearTimeout(b._t);
@@ -1352,27 +1527,60 @@ function catSay(text) {
 function applyCatSetting() {
   document.body.classList.toggle('no-cat', !state.settings.cat);
   $('#catToggle').checked = state.settings.cat;
-  if (state.settings.cat) { catPlace(Math.min(Cat.x || catBounds() * 0.35, catBounds()), 0); catSchedule(6000); }
-  else clearTimeout(Cat.timer);
+  if (state.settings.cat) catRun();
+  else { Cat.gen++; clearTimeout(Cat.timer); }
 }
-catEl.addEventListener('click', () => {
-  catSay(CAT_LINES[Math.floor(Math.random() * CAT_LINES.length)]);
-  if (!Cat.walking) catSchedule(2500);
-});
-document.addEventListener('visibilitychange', () => { if (!document.hidden) catSchedule(); });
-window.addEventListener('resize', () => { if (Cat.x > catBounds()) catPlace(catBounds(), 0); });
+catEl.addEventListener('click', () => catSay(CAT_LINES[Math.floor(Math.random() * CAT_LINES.length)]));
+['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => setTimeout(catRefresh, 120)));
+new MutationObserver(catRefresh).observe(stage, { attributes: true, attributeFilter: ['class'] });   // pseudo pantalla completa
+mqPortrait.addEventListener('change', () => setTimeout(catRefresh, 250));
+let catResizeT;
+window.addEventListener('resize', () => { clearTimeout(catResizeT); catResizeT = setTimeout(catRefresh, 200); });
+stage.addEventListener('pointerdown', () => { if (isFullscreen()) catPoke(); });
+let catMoveT = 0;
+stage.addEventListener('mousemove', () => { if (isFullscreen() && Date.now() - catMoveT > 2000) { catMoveT = Date.now(); catPoke(); } });
 
-/* ---------- 7b. VIOLE RUNNER (aparece cuando no hay señal) ---------- */
-const Runner = { raf: 0, on: false, over: false, ready: true, score: 0, hi: Number(Store.get('runnerHi', 0)) || 0, speed: 5, frame: 0, obs: [], p: { x: 40, y: 0, vy: 0, w: 42, h: 32, ground: true } };
+/* ---------- 7b. VIOLE RUNNER (cuando no hay señal) ----------
+   Viole se dibuja con los MISMOS trazos que la de la barra (Path2D acepta rutas SVG),
+   así el juego y la app hablan el mismo idioma visual. */
+const VP = Object.fromEntries(Object.entries({
+  tail: 'M46,62 C34,42 29,20 35,10 C39,4 46,8 46,17 C45,29 50,45 55,58 Z',
+  tailPatch: 'M38,18 C36,27 40,38 45,42 C46,34 44,23 38,18 Z',
+  legB1: 'M48,72 L40,94 L37,107 L45,107 L47,95 L57,76 Z',
+  legB2: 'M89,74 L92,95 L96,107 L88,107 L84,95 L81,75 Z',
+  body: 'M43,62 C46,48 68,47 90,50 C98,46 112,56 108,71 C105,80 94,81 80,79 C67,79 58,82 48,75 C42,71 41,66 43,62 Z',
+  bodyPatch: 'M43,63 C46,48 68,47 91,50 C92,61 86,71 75,71 C64,71 57,64 49,70 C44,71 42,67 43,63 Z',
+  legA1: 'M55,72 L62,95 L67,107 L59,107 L54,94 L46,75 Z',
+  legA2: 'M96,73 L99,95 L104,107 L96,107 L91,95 L88,74 Z',
+  earR: 'M105,34 L110,16 L117,33 Z',
+  head: 'M89,48 C91,32 104,28 116,31 C125,34 130,43 129,51 C129,59 122,63 111,63 C101,63 92,58 89,48 Z',
+  headPatch: 'M89,49 C90,34 101,28 116,30 C118,39 119,48 111,51 C102,54 94,52 89,49 Z',
+  earL: 'M94,36 L101,15 L112,32 Z',
+  eye: 'M102,38 Q113,38 122,46 Q113,52 104,47 Z',
+  mouth: 'M122,53 Q125,56 128,52'
+}).map(([k, d]) => [k, new Path2D(d)]));
+
+const RUN_S = 0.6;                                 // escala de Viole en el juego
+const CAT_BOX = { w: 101 * RUN_S, h: 103 * RUN_S };
+const Runner = { raf: 0, on: false, over: false, overAt: 0, ready: true, score: 0, hi: Number(Store.get('runnerHi', 0)) || 0,
+                 speed: 5, frame: 0, t: 0, obs: [], W: 600, H: 190, colors: {}, p: { x: 34, y: 0, vy: 0, ground: true } };
 const cv = $('#runner');
+const groundY = () => Runner.H - 30;
 
+function runnerSize() {
+  const r = cv.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  Runner.W = Math.max(280, r.width);
+  Runner.H = r.height || 190;
+  cv.width = Runner.W * dpr; cv.height = Runner.H * dpr;
+  cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+}
 function startRunner() {
   stopRunner();
   requestAnimationFrame(() => {
-    const r = cv.getBoundingClientRect();
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    cv.width = Math.max(300, r.width) * dpr; cv.height = 130 * dpr;
-    cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    runnerSize();
+    Runner.colors = { accent: cssVar('--accent') || '#f2c14e', muted: cssVar('--muted') || '#9b9aa0', faint: cssVar('--faint') || '#6c6b72',
+                      line: cssVar('--line-2') || 'rgba(255,255,255,.14)', surface: cssVar('--surface-3') || '#25252a' };
     resetRunner();
     Runner.on = true;
     Runner.raf = requestAnimationFrame(runnerLoop);
@@ -1380,103 +1588,149 @@ function startRunner() {
 }
 function stopRunner() { Runner.on = false; cancelAnimationFrame(Runner.raf); }
 function resetRunner() {
-  const G = 130 - 22;
   Object.assign(Runner, { over: false, ready: true, score: 0, speed: 5, frame: 0, obs: [] });
-  Object.assign(Runner.p, { y: G - Runner.p.h, vy: 0, ground: true });
-  runnerScore();
-}
-function runnerScore() {
-  const pad = (n) => String(Math.floor(n)).padStart(5, '0');
-  $('#runScore').textContent = pad(Runner.score);
-  $('#runHi').textContent = 'HI ' + pad(Runner.hi);
+  Object.assign(Runner.p, { y: groundY() - CAT_BOX.h, vy: 0, ground: true });
 }
 function runnerJump() {
   if ($('#error').classList.contains('hidden')) return;
-  if (Runner.over) { resetRunner(); return; }
-  if (Runner.ready) { Runner.ready = false; }
-  if (Runner.p.ground) { Runner.p.vy = -10.8; Runner.p.ground = false; }
+  if (Runner.over) {
+    if (Date.now() - Runner.overAt < 600) return;     // evita reiniciar sin querer al chocar
+    resetRunner(); Runner.ready = false; return;
+  }
+  Runner.ready = false;
+  if (Runner.p.ground) { Runner.p.vy = -11.6; Runner.p.ground = false; }
 }
 cv.addEventListener('pointerdown', (e) => { e.preventDefault(); runnerJump(); });
+window.addEventListener('resize', () => { if (Runner.on) { runnerSize(); if (Runner.p.ground) Runner.p.y = groundY() - CAT_BOX.h; } });
+$('#errMore').addEventListener('click', () => {
+  const info = $('#errInfo');
+  info.hidden = !info.hidden;
+  $('#errMore').setAttribute('aria-expanded', String(!info.hidden));
+});
 
 function cssVar(n) { return getComputedStyle(document.body).getPropertyValue(n).trim(); }
-function drawRunnerCat(ctx, x, y, f, air, dead) {
+
+function drawViole(ctx, x, y, t, mode) {   // mode: idle | run | air | dead
   const fur = '#f3f1ec', patch = '#101014';
-  ctx.save(); ctx.translate(x, y); ctx.lineWidth = 2; ctx.strokeStyle = patch;
-  // cola
-  ctx.save(); ctx.translate(6, 12); ctx.rotate(air ? -0.3 : Math.sin(f * 0.18) * 0.15);
-  ctx.fillStyle = fur; ctx.beginPath(); ctx.roundRect(-3, -14, 6, 17, 3); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = patch; ctx.fillRect(-2, -10, 4, 6); ctx.restore();
-  // patas
-  const step = air ? 2 : (Math.floor(f / 5) % 2 ? 3 : -3);
-  ctx.fillStyle = fur;
-  [[9 - step * .5, 21], [26 + step * .5, 21]].forEach(([px, py]) => { ctx.beginPath(); ctx.roundRect(px, py, 6, 10, 2); ctx.fill(); ctx.stroke(); });
-  // cuerpo + mancha
-  ctx.beginPath(); ctx.roundRect(5, 9, 29, 15, 7); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = patch; ctx.beginPath(); ctx.roundRect(7, 9, 18, 9, 5); ctx.fill();
-  // cabeza
-  ctx.fillStyle = fur; ctx.beginPath(); ctx.roundRect(24, 0, 17, 15, 6); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = patch; ctx.beginPath(); ctx.roundRect(24, 0, 13, 8, 4); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(26, 1); ctx.lineTo(30, -7); ctx.lineTo(35, 1); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = fur; ctx.beginPath(); ctx.moveTo(34, 1); ctx.lineTo(37, -6); ctx.lineTo(40, 1); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // ojo
-  if (dead) { ctx.strokeStyle = '#f2c14e'; ctx.beginPath(); ctx.moveTo(31, 4); ctx.lineTo(36, 9); ctx.moveTo(36, 4); ctx.lineTo(31, 9); ctx.stroke(); }
-  else { ctx.fillStyle = '#f2c14e'; ctx.beginPath(); ctx.ellipse(33.5, 6.5, 4, 2.6, .15, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = patch; ctx.fillRect(33.4, 4.3, 1.6, 4.6); }
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(RUN_S, RUN_S); ctx.translate(-29, -4);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const solid = (p, lw) => { ctx.fillStyle = fur; ctx.fill(p); ctx.strokeStyle = patch; ctx.lineWidth = lw; ctx.stroke(p); };
+  const rot = (px, py, a, fn) => { ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.translate(-px, -py); fn(); ctx.restore(); };
+  const swing = mode === 'run' ? Math.sin(t * 0.42) * 0.45 : 0;
+  const air = mode === 'air';
+  // contorno claro muy sutil para que el negro no se pierda en el fondo
+  ctx.shadowColor = 'rgba(255,255,255,.35)'; ctx.shadowBlur = 1.5;
+  rot(48, 60, air ? -0.3 : Math.sin(t * 0.08) * 0.12, () => { solid(VP.tail, 3); ctx.fillStyle = patch; ctx.fill(VP.tailPatch); });
+  rot(52, 74, air ? 0.55 : -swing, () => solid(VP.legB1, 2.8));
+  rot(85, 74, air ? -0.45 : -swing, () => solid(VP.legB2, 2.8));
+  solid(VP.body, 3); ctx.fillStyle = patch; ctx.fill(VP.bodyPatch);
+  rot(50, 73, air ? 0.65 : swing, () => solid(VP.legA1, 2.8));
+  rot(92, 73, air ? -0.6 : swing, () => solid(VP.legA2, 2.8));
+  solid(VP.earR, 2.6); solid(VP.head, 3);
+  ctx.fillStyle = patch; ctx.fill(VP.headPatch); ctx.fill(VP.earL);
+  ctx.shadowBlur = 0;
+  if (mode === 'dead') {
+    ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(108, 40); ctx.lineTo(118, 50); ctx.moveTo(118, 40); ctx.lineTo(108, 50); ctx.stroke();
+  } else {
+    const blink = mode === 'idle' && t % 260 > 250;
+    if (blink) { ctx.strokeStyle = patch; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(103, 45); ctx.quadraticCurveTo(113, 49, 121, 45); ctx.stroke(); }
+    else {
+      ctx.fillStyle = '#f2c14e'; ctx.fill(VP.eye); ctx.strokeStyle = patch; ctx.lineWidth = 2.2; ctx.stroke(VP.eye);
+      ctx.lineWidth = 2.8; ctx.beginPath(); ctx.moveTo(115, 40); ctx.lineTo(115, 48); ctx.stroke();
+    }
+  }
+  ctx.strokeStyle = patch; ctx.lineWidth = 2.3; ctx.stroke(VP.mouth);
   ctx.restore();
 }
-function runnerLoop() {
-  if (!Runner.on || $('#error').classList.contains('hidden')) return;
-  const ctx = cv.getContext('2d');
-  const W = cv.width / (Math.min(2, window.devicePixelRatio || 1)), H = 130, G = H - 22;
-  const accent = cssVar('--accent') || '#f2c14e', line = cssVar('--line-2') || 'rgba(255,255,255,.14)';
-  ctx.clearRect(0, 0, W, H);
-  ctx.strokeStyle = line; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, G); ctx.lineTo(W, G); ctx.stroke();
-  ctx.fillStyle = line;
-  for (let i = 0; i < 14; i++) { const dx = ((i * 61 - Runner.frame * Runner.speed) % W + W) % W; ctx.fillRect(dx, G + 6 + (i % 3) * 4, 5, 1.5); }
 
-  const p = Runner.p;
+function drawObstacle(ctx, o, G, c) {
+  if (o.kind === 'yarn') {                 // ovillo de lana con su hilo suelto
+    const cx = o.x + o.w / 2, cy = G - o.h / 2, r = o.h / 2;
+    ctx.strokeStyle = c.accent; ctx.lineWidth = 1.4; ctx.globalAlpha = .6;
+    ctx.beginPath(); ctx.moveTo(cx + r * .6, G - 1); ctx.quadraticCurveTo(cx + r + 8, G - 6, cx + r + 16, G - 1); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = c.accent; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.32)'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.arc(cx - 2, cy + 1, r * .62, -.6, 2.2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + 3, cy - 2, r * .4, 2.4, 5.2); ctx.stroke();
+  } else {                                 // tele antigua con antena
+    const top = G - o.h + 9;
+    ctx.strokeStyle = c.accent; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(o.x + o.w / 2, top); ctx.lineTo(o.x + 4, G - o.h); ctx.moveTo(o.x + o.w / 2, top); ctx.lineTo(o.x + o.w - 4, G - o.h); ctx.stroke();
+    ctx.fillStyle = c.surface; ctx.strokeStyle = c.line; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(o.x, top, o.w, o.h - 12, 5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.roundRect(o.x + 4, top + 4, o.w - 12, o.h - 20, 3); ctx.fill();
+    ctx.fillStyle = c.accent; ctx.fillRect(o.x + o.w - 6, top + 5, 2.5, 2.5);
+    ctx.strokeStyle = c.line; ctx.beginPath(); ctx.moveTo(o.x + 6, G - 3); ctx.lineTo(o.x + 4, G); ctx.moveTo(o.x + o.w - 6, G - 3); ctx.lineTo(o.x + o.w - 4, G); ctx.stroke();
+  }
+}
+
+function runnerLoop() {
+  if (!Runner.on || $('#error').classList.contains('hidden')) { Runner.on = false; return; }
+  const ctx = cv.getContext('2d'), c = Runner.colors;
+  const { W, H } = Runner, G = groundY(), p = Runner.p;
+  Runner.t++;
+  ctx.clearRect(0, 0, W, H);
+
+  // cielo con puntitos lejanos (se mueven lento) y suelo con polvo (se mueve rápido)
+  const drift = Runner.ready ? Runner.t * 0.3 : Runner.frame * Runner.speed;
+  ctx.fillStyle = c.line;
+  for (let i = 0; i < 12; i++) {
+    const sx = ((i * 173 - drift * 0.12) % W + W) % W, sy = 16 + (i * 37) % (G - 80);
+    ctx.globalAlpha = 0.25 + (i % 3) * 0.12; ctx.fillRect(sx, sy, 1.6, 1.6);
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = c.line; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, G); ctx.lineTo(W, G); ctx.stroke();
+  for (let i = 0; i < 16; i++) {
+    const dx = ((i * 97 - drift) % W + W) % W;
+    ctx.fillRect(dx, G + 7 + (i % 3) * 5, 3 + (i % 2) * 3, 1.5);
+  }
+
   if (!Runner.over && !Runner.ready) {
     Runner.frame++;
     Runner.score += 0.15;
-    if (Runner.score > Runner.hi) { Runner.hi = Runner.score; if (Runner.frame % 30 === 0) Store.set('runnerHi', Math.floor(Runner.hi)); }
-    runnerScore();
+    if (Runner.score > Runner.hi) Runner.hi = Runner.score;
     Runner.speed = Math.min(10, 5 + Math.floor(Runner.score / 120) * 0.4);
-    p.vy += 0.6; p.y += p.vy;
-    if (p.y >= G - p.h) { p.y = G - p.h; p.vy = 0; p.ground = true; }
+    p.vy += 0.62; p.y += p.vy;
+    if (p.y >= G - CAT_BOX.h) { p.y = G - CAT_BOX.h; p.vy = 0; p.ground = true; }
     const last = Runner.obs[Runner.obs.length - 1];
-    if ((!last || W - last.x > 160 + Runner.speed * 14) && Math.random() < 0.03) {
-      const tall = Math.random() < 0.45;
-      Runner.obs.push({ x: W + 10, w: tall ? 14 : 24, h: tall ? 30 : 20, kind: tall ? 'antenna' : 'yarn' });
+    if ((!last || W - last.x > 190 + Runner.speed * 16) && Math.random() < 0.03) {
+      const tv = Math.random() < 0.4;
+      Runner.obs.push({ x: W + 10, w: tv ? 26 : 22, h: tv ? 32 : 22, kind: tv ? 'tv' : 'yarn' });
     }
+    const bx = p.x + 16 * RUN_S, bw = 84 * RUN_S, by = p.y + 30 * RUN_S, pad = 4;
     for (let i = Runner.obs.length - 1; i >= 0; i--) {
-      const o = Runner.obs[i]; o.x -= Runner.speed;
-      const oy = G - o.h, pad = 6;
-      if (p.x + pad < o.x + o.w - pad && p.x + p.w - pad > o.x + pad && p.y + pad < oy + o.h && p.y + p.h > oy + pad) {
-        Runner.over = true; Store.set('runnerHi', Math.floor(Runner.hi));
+      const o = Runner.obs[i];
+      o.x -= Runner.speed;
+      const oy = G - o.h;
+      if (bx + pad < o.x + o.w - pad && bx + bw - pad > o.x + pad && by + pad < oy + o.h && p.y + CAT_BOX.h - pad > oy + pad) {
+        Runner.over = true; Runner.overAt = Date.now();
+        Store.set('runnerHi', Math.floor(Runner.hi));
       }
-      if (o.x + o.w < -10) Runner.obs.splice(i, 1);
+      if (o.x + o.w < -30) Runner.obs.splice(i, 1);
     }
   }
-  for (const o of Runner.obs) {
-    const oy = G - o.h;
-    if (o.kind === 'yarn') { // ovillo de lana
-      ctx.fillStyle = accent; ctx.beginPath(); ctx.arc(o.x + o.w / 2, oy + o.h / 2 + 2, o.h / 2, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(o.x + o.w / 2, oy + o.h / 2 + 2, o.h / 3.2, .4, 2.6); ctx.stroke();
-    } else {                  // antena de TV
-      ctx.fillStyle = cssVar('--surface-3') || '#25252a'; ctx.fillRect(o.x + 3, oy + 8, o.w - 6, o.h - 8);
-      ctx.strokeStyle = accent; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(o.x + o.w / 2, oy + 8); ctx.lineTo(o.x, oy); ctx.moveTo(o.x + o.w / 2, oy + 8); ctx.lineTo(o.x + o.w, oy); ctx.stroke();
-    }
-  }
-  drawRunnerCat(ctx, p.x, p.y, Runner.frame, !p.ground, Runner.over);
+  for (const o of Runner.obs) drawObstacle(ctx, o, G, c);
+  const mode = Runner.over ? 'dead' : Runner.ready ? 'idle' : p.ground ? 'run' : 'air';
+  drawViole(ctx, p.x, p.y, Runner.ready ? Runner.t : Runner.frame, mode);
+
+  // textos: discretos y dentro del propio juego
+  const pad5 = (n) => String(Math.floor(n)).padStart(5, '0');
+  ctx.textAlign = 'right'; ctx.fillStyle = c.faint; ctx.font = '600 11px ui-monospace, Menlo, monospace';
+  if (!Runner.ready || Runner.hi > 0) ctx.fillText(`HI ${pad5(Runner.hi)}   ${pad5(Runner.score)}`, W - 18, 22);
+  ctx.textAlign = 'center';
   if (Runner.ready) {
-    ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--muted') || '#9b9aa0'; ctx.font = '13px Inter, sans-serif';
-    ctx.fillText('Toca o pulsa Espacio para jugar con Viole', W / 2, H / 2 - 6);
-  }
-  if (Runner.over) {
-    ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(0, 0, W, H);
-    ctx.textAlign = 'center'; ctx.fillStyle = accent; ctx.font = '600 15px Fredoka, sans-serif';
-    ctx.fillText('¡Miau! Otra vez', W / 2, H / 2 - 4);
-    ctx.fillStyle = '#f3f1ec'; ctx.font = '12px Inter, sans-serif';
-    ctx.fillText('Toca o pulsa Espacio', W / 2, H / 2 + 16);
+    ctx.fillStyle = c.muted; ctx.font = '500 15px Fredoka, Inter, sans-serif';
+    ctx.fillText('Toca para jugar con Viole', W / 2, H * 0.32);
+    ctx.fillStyle = c.faint; ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('mientras vuelve la señal', W / 2, H * 0.32 + 20);
+  } else if (Runner.over) {
+    ctx.fillStyle = c.accent; ctx.font = '600 16px Fredoka, Inter, sans-serif';
+    ctx.fillText('¡Miau! Otra vez', W / 2, H * 0.32);
+    ctx.fillStyle = c.faint; ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Toca para volver a jugar', W / 2, H * 0.32 + 20);
   }
   Runner.raf = requestAnimationFrame(runnerLoop);
 }
@@ -1489,7 +1743,7 @@ $('#btnSide').addEventListener('click', () => {
   state.settings.sideCollapsed = !state.settings.sideCollapsed;
   document.body.classList.toggle('side-collapsed', state.settings.sideCollapsed);
   saveSettings();
-  setTimeout(() => { if (Cat.x > catBounds()) catPlace(catBounds(), 0); }, 50);
+  setTimeout(catRefresh, 60);
 });
 $('#scrim').addEventListener('click', closeSide);
 $('#listsBox').addEventListener('toggle', () => { state.settings.listsOpen = $('#listsBox').open; saveSettings(); });
