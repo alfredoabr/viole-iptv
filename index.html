@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0b0b0d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -60,6 +60,8 @@ body[data-skin="halloween"] {
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
+/* La app no se amplía con dos dedos ni rebota: solo se desplazan las listas por dentro */
+html, body { touch-action: pan-x pan-y; overscroll-behavior: none; }
 /* La app no se selecciona como un texto: el doble toque en Firefox abría «copiar, buscar…» */
 body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 input, textarea, .err-info p { -webkit-user-select: text; user-select: text; }
@@ -2300,6 +2302,9 @@ function deviceSummary() {
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register(IS_BETA ? '../sw.js' : 'sw.js').catch(() => {});
 }
+
+// iPhone/iPad ignoran a veces el bloqueo de zoom de la cabecera: se frena el gesto de pellizco directamente
+['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
 
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
 </script>
