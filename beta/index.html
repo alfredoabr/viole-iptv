@@ -304,12 +304,14 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 .dock-info .res { color: var(--accent); font-weight: 600; }
 
 /* Recorta solo por los lados (para esconder a Viole), nunca por arriba: orejas y cola siempre enteras */
-.cat-track { flex: 1; align-self: stretch; position: relative; min-width: 0; overflow-x: clip; overflow-y: visible; clip-path: inset(-120px 0 -10px 0); }
+/* z-index alto: Viole puede asomar por encima del vídeo (en iPhone el vídeo va en su propia capa y lo tapaba) */
+.cat-track { flex: 1; align-self: stretch; position: relative; z-index: 8; min-width: 0; overflow-x: clip; overflow-y: visible; clip-path: inset(-120px 0 -10px 0); }
 .cat {
   position: absolute; left: 0; bottom: 2px; width: 88px; height: 66px;
   transform: translateX(var(--x, -999px));
   transition: transform var(--dur, 0s) cubic-bezier(.3,.05,.7,.95);
   cursor: pointer; border: 0; padding: 0; background: transparent; display: block; line-height: 0;
+  will-change: transform;   /* capa propia: Safari la pinta encima del vídeo */
 }
 .cat svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scaleX(var(--dir, 1)); transition: transform .35s ease;
   filter: drop-shadow(0 0 .6px rgba(255,255,255,.55)) drop-shadow(0 0 3px rgba(255,255,255,.08)); }
