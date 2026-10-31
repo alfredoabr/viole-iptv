@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0b0d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -60,6 +60,9 @@ body[data-skin="halloween"] {
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
+/* La app no se selecciona como un texto: el doble toque en Firefox abría «copiar, buscar…» */
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea, .err-info p { -webkit-user-select: text; user-select: text; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -69,6 +72,7 @@ body {
   overflow: hidden;
   display: grid;
   grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr);   /* nada puede ensanchar la página más que la pantalla */
   height: 100vh;
   height: 100dvh;
 }
@@ -120,18 +124,17 @@ textarea.field { height: auto; padding: 10px 12px; font: 12px/1.5 ui-monospace, 
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
-.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.brand-mark { width: 34px; height: 34px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
-.brand-mark svg { width: 26px; height: 26px; }
-.brand-name { font-family: Fredoka, Inter, sans-serif; font-weight: 600; font-size: 17px; letter-spacing: .3px; line-height: 1; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; }
+.brand-mark { width: 40px; height: 40px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--line); display: grid; place-items: center; }
+.brand-mark svg { width: 31px; height: 31px; }
+.brand-name { font-family: Fredoka, Inter, sans-serif; font-weight: 600; font-size: 29px; letter-spacing: .2px; line-height: 1; white-space: nowrap; display: flex; align-items: center; gap: 7px; }
 .brand-name b { color: var(--accent); font-weight: 600; }
-.brand-sub { color: var(--muted); font-size: 11.5px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .top .spacer { flex: 1; }
 
 /* =====================================================================
    3. CUERPO: SIDEBAR + ZONA DE VÍDEO
    ===================================================================== */
-.body { display: flex; min-height: 0; position: relative; }
+.body { display: flex; min-height: 0; position: relative; overflow-x: clip; }
 
 .side {
   width: 340px; flex: none; display: flex; flex-direction: column; min-height: 0;
@@ -245,7 +248,7 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 
 /* Escenario de vídeo */
 .stage { flex: 1; min-height: 0; position: relative; background: #000; display: grid; place-items: center; overflow: hidden; }
-.stage video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+.stage video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
 .stage.pseudo-fs { position: fixed; inset: 0; z-index: 100; }
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; z-index: 5; }
 .loading { background: rgba(0,0,0,.45); pointer-events: none; }
@@ -283,24 +286,30 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
    encima de los controles del vídeo y no intercepta toques.
    ===================================================================== */
 .dock {
-  height: 52px; flex: none; display: flex; align-items: center; gap: 10px;
+  height: 70px; flex: none; display: flex; align-items: center; gap: 10px;
   padding: 0 12px; padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid var(--line); background: var(--surface);
 }
 .dock .zap { display: flex; gap: 6px; flex: none; }
 .zap .btn { width: 40px; height: 36px; padding: 0; }
 .zap .btn svg { width: 22px; height: 22px; }
+.media { display: flex; gap: 6px; flex: none; }
+.media .btn { width: 40px; height: 36px; padding: 0; }
+.media .btn svg.i { width: 20px; height: 20px; }
+.media .btn.fill svg.i { fill: currentColor; }
+.media .btn.is-off { color: var(--muted); }
 .dock-info { flex: none; display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--muted); }
 .dock-info .res { color: var(--accent); font-weight: 600; }
 
-.cat-track { flex: 1; align-self: stretch; position: relative; min-width: 0; overflow: hidden; }
+/* Recorta solo por los lados (para esconder a Viole), nunca por arriba: orejas y cola siempre enteras */
+.cat-track { flex: 1; align-self: stretch; position: relative; min-width: 0; overflow-x: clip; overflow-y: visible; clip-path: inset(-120px 0 -10px 0); }
 .cat {
-  position: absolute; left: 0; bottom: 3px; width: 58px; height: 44px;
+  position: absolute; left: 0; bottom: 2px; width: 88px; height: 66px;
   transform: translateX(var(--x, -999px));
   transition: transform var(--dur, 0s) cubic-bezier(.3,.05,.7,.95);
-  cursor: pointer; border: 0; padding: 0; background: transparent;
+  cursor: pointer; border: 0; padding: 0; background: transparent; display: block; line-height: 0;
 }
-.cat svg { width: 100%; height: 100%; overflow: visible; transform: scaleX(var(--dir, 1)); transition: transform .35s ease;
+.cat svg { display: block; width: 100%; height: 100%; overflow: visible; transform: scaleX(var(--dir, 1)); transition: transform .35s ease;
   filter: drop-shadow(0 0 .6px rgba(255,255,255,.55)) drop-shadow(0 0 3px rgba(255,255,255,.08)); }
 .cat .tail  { transform-origin: 48px 60px; transform-box: view-box; animation: tail 4.2s ease-in-out infinite; }
 .cat .head  { transform-origin: 104px 50px; transform-box: view-box; }
@@ -318,25 +327,29 @@ select.field { appearance: none; -webkit-appearance: none; padding-right: 34px;
 @keyframes nod   { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-2deg); } }
 @keyframes blink { 0%, 95%, 100% { transform: scaleY(0); } 97% { transform: scaleY(1); } }
 .cat-bubble {
-  position: absolute; bottom: 12px; left: calc(100% + 4px);
+  position: absolute; bottom: 22px; left: calc(100% + 4px);
   background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text);
-  font: 500 12px/1.3 Fredoka, Inter, sans-serif; padding: 6px 10px; border-radius: 10px; white-space: nowrap;
+  font: 500 12.5px/1.3 Fredoka, Inter, sans-serif; padding: 7px 11px; border-radius: 12px; width: max-content; max-width: 230px; white-space: normal; line-height: 1.3;
   opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 2;
 }
 .cat-bubble.show { opacity: 1; }
 .cat.bubble-left .cat-bubble { left: auto; right: calc(100% + 4px); }
 
 /* Franja de Viole sobre el vídeo (solo en pantalla completa) */
-.stage-cat { display: none; position: absolute; left: 0; right: 0; bottom: 76px; height: 76px; z-index: 4; pointer-events: none; overflow: hidden; }
-.stage:fullscreen .stage-cat, .stage:-webkit-full-screen .stage-cat, .stage.pseudo-fs .stage-cat { display: block; }
-.stage-cat .cat { width: 100px; height: 76px; bottom: 0; pointer-events: none; cursor: default; }
+/* En pantalla completa Viole camina sobre la misma línea que los controles, por delante de su degradado */
+.stage-cat { display: none; position: absolute; left: 0; right: 0; bottom: 6px; height: 120px; z-index: 7; pointer-events: none; overflow-x: clip; overflow-y: visible; clip-path: inset(-200px 0 -40px 0); }
+.stage:fullscreen .stage-cat { display: block; }
+.stage.pseudo-fs .stage-cat { display: block; }
+/* Reglas separadas a propósito: si un navegador no entiende un selector de la lista,
+   descarta la regla entera (Firefox no entiende -webkit-full-screen). */
+.stage:-webkit-full-screen .stage-cat { display: block; }
+.stage-cat .cat { width: 158px; height: 120px; bottom: 0; pointer-events: auto; cursor: pointer; }
 .stage-cat .cat svg { filter: drop-shadow(0 0 .7px rgba(255,255,255,.5)) drop-shadow(0 4px 10px rgba(0,0,0,.6)); }
-.stage-cat .cat-bubble { display: none; }
+.stage-cat .cat-bubble { bottom: 70px; font-size: 16px; max-width: 320px; padding: 10px 14px; border-radius: 14px; background: rgba(19,19,22,.92); }
+.stage.is-fs .stage-cat { display: block; }   /* la pantalla completa la marca JavaScript: más fiable que :fullscreen */
 
 body.no-cat .cat { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  .cat, .cat * { animation: none !important; transition: none !important; }
-}
+body.reduce-motion .cat, body.reduce-motion .cat * { animation: none !important; transition: none !important; }
 
 /* =====================================================================
    6. DIÁLOGOS (<dialog> nativo: ESC, foco y fondo los gestiona el navegador)
@@ -397,19 +410,75 @@ dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(3px); }
   body.side-open .scrim { opacity: 1; pointer-events: auto; }
 }
 @media (max-width: 560px) {
-  .brand-sub, .hide-sm { display: none; }
+  .hide-sm { display: none; }
+  .brand-name { font-size: 23px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .brand-mark svg { width: 27px; height: 27px; }
   .now { gap: 10px; }
   .dock-info .status-text { display: none; }
 }
+/* ---------- Filtros en una sola fila: Todos · Favoritos · Recientes · categorías ---------- */
+.chips {
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 2px 12px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent);
+          mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent);
+}
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; height: 32px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface-2);
+  color: var(--muted); font-size: 12.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.chip:hover { color: var(--text); border-color: var(--line-2); }
+.chip svg.i { width: 14px; height: 14px; }
+.chip .n { font-size: 11px; opacity: .65; }
+.chip[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+.chip[aria-selected="true"] svg.i { fill: currentColor; }
+.chip-sep { flex: none; width: 1px; margin: 7px 2px; background: var(--line-2); }
+
+/* ---------- Controles propios sobre el vídeo ---------- */
+.gesture { position: absolute; inset: 0; z-index: 2; touch-action: manipulation; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+.vctrl {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: center; gap: 6px;
+  padding: 30px 12px 10px; background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.75));
+  opacity: 0; pointer-events: none; transition: opacity .2s ease;
+}
+.stage.show-ctrl .vctrl { opacity: 1; pointer-events: auto; }
+.stage.show-ctrl .gesture { cursor: default; }
+.vbtn { width: 42px; height: 42px; flex: none; border: 0; border-radius: 10px; background: transparent; color: #fff; display: grid; place-items: center; }
+.vbtn:hover { background: rgba(255,255,255,.14); }
+.vbtn svg.i { width: 22px; height: 22px; }
+.vbtn.fill svg.i { fill: currentColor; }
+.vvol { width: 90px; flex: none; accent-color: var(--accent); }
+.vseek { flex: 1; min-width: 60px; accent-color: var(--accent); }
+.vtime { flex: none; color: rgba(255,255,255,.85); font: 500 12px ui-monospace, Menlo, monospace; }
+.vlive { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: #fff; font: 600 11px/1 Inter, sans-serif; letter-spacing: .6px; padding: 8px; border-radius: 8px; }
+.vlive i { width: 7px; height: 7px; border-radius: 50%; background: #ef5a5a; }
+.vlive.behind i { background: #8a8a8a; }
+.vspacer { flex: 1; }
+.vctrl.is-live .vseek, .vctrl.is-live .vtime { display: none; }
+.vctrl:not(.is-live) .vlive, .vctrl:not(.is-live) .vspacer { display: none; }
+@media (pointer: coarse) {
+  .chip { height: 40px; padding: 0 16px; font-size: 14px; }
+  .chip svg.i { width: 16px; height: 16px; }
+  .vctrl { padding: 36px 14px 14px; gap: 10px; }
+  .vbtn { width: 52px; height: 52px; }
+  .vbtn svg.i { width: 28px; height: 28px; }
+  .vvol { display: none; }
+  .vlive { font-size: 13px; }
+}
+
 /* Etiqueta de la versión de prueba */
-.beta-tag { display: none; margin-left: 6px; padding: 1px 6px; border-radius: 6px; font: 600 10px/1.4 Inter, sans-serif; letter-spacing: .5px; text-transform: uppercase; vertical-align: 2px; color: var(--accent-ink); background: var(--accent); }
-body.is-beta .beta-tag { display: inline-block; }
+.beta-tag { display: none; margin-left: 2px; padding: 1px 6px; border-radius: 6px; font: 600 10px/1.4 Inter, sans-serif; letter-spacing: .5px; text-transform: uppercase; vertical-align: 2px; color: var(--accent-ink); background: var(--accent); }
+body.is-beta .beta-tag { display: inline-block; align-self: flex-start; }
 
 /* =====================================================================
    8. PANTALLAS TÁCTILES (Xiaomi Pad 6): todo se toca con el dedo, mínimo ~44 px
    ===================================================================== */
 @media (pointer: coarse) {
-  .top { height: 62px; }
+  .top { height: 66px; }
+  .brand-mark { width: 44px; height: 44px; border-radius: 12px; }
+  .brand-mark svg { width: 34px; height: 34px; }
+  .brand-name { font-size: 32px; }
   .btn { height: 44px; padding: 0 14px; border-radius: 12px; }
   .btn.icon { width: 44px; }
   .field { height: 44px; font-size: 15px; }
@@ -431,11 +500,14 @@ body.is-beta .beta-tag { display: inline-block; }
   .menu { min-width: 280px; }
   .menu-item { padding: 13px 12px; font-size: 14.5px; }
   .menu-quality select { height: 40px; }
-  .dock { height: 66px; gap: 12px; }
+  .dock { height: 86px; gap: 12px; }
   .dock .zap { gap: 8px; }
   .zap .btn { width: 58px; height: 48px; border-radius: 14px; }
   .zap .btn svg { width: 26px; height: 26px; }
-  .cat { width: 72px; height: 54px; bottom: 4px; }
+  .media { gap: 8px; }
+  .media .btn { width: 54px; height: 48px; border-radius: 14px; }
+  .media .btn svg.i { width: 24px; height: 24px; }
+  .cat { width: 108px; height: 81px; bottom: 2px; }
   .seg button { height: 42px; }
   .more-dots { width: 56px; height: 36px; }
   .game canvas { height: 210px; }
@@ -457,6 +529,15 @@ body.is-beta .beta-tag { display: inline-block; }
   #btnSide, .scrim { display: none; }
   .lists-body { max-height: 160px; }
 }
+
+/* Móvil (iPhone): cabecera más compacta. Va al final para mandar sobre las reglas táctiles. */
+@media (max-width: 560px) {
+  .top { gap: 8px; padding-left: 10px; padding-right: 10px; }
+  .brand-mark { width: 36px; height: 36px; }
+  .brand-mark svg { width: 28px; height: 28px; }
+  .brand-name { font-size: 23px; gap: 5px; }
+  .media .btn, .zap .btn { width: 46px; }
+}
 </style>
 </head>
 
@@ -475,6 +556,7 @@ body.is-beta .beta-tag { display: inline-block; }
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></symbol>
   <symbol id="i-max" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="i-min" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></symbol>
   <symbol id="i-pip" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
   <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
@@ -482,6 +564,8 @@ body.is-beta .beta-tag { display: inline-block; }
   <symbol id="i-up" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
   <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6m0-6 6 6"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
   <!-- Cara de Viole: blanca, mancha negra sobre el ojo y una oreja, ojo amarillo -->
@@ -505,7 +589,6 @@ body.is-beta .beta-tag { display: inline-block; }
     <div class="brand-mark"><svg><use href="#viole-head"/></svg></div>
     <div style="min-width:0">
       <div class="brand-name">Viole <b>IPTV</b><span class="beta-tag">beta</span></div>
-      <div class="brand-sub" id="stats">Cargando…</div>
     </div>
   </div>
   <div class="spacer"></div>
@@ -518,7 +601,7 @@ body.is-beta .beta-tag { display: inline-block; }
 
   <!-- ============================ SIDEBAR ============================ -->
   <aside class="side" id="side">
-    <details class="lists" id="listsBox" open>
+    <details class="lists" id="listsBox">
       <summary>Mis listas <span class="count" id="listsCount">0</span><svg class="i chev" style="width:16px;height:16px"><use href="#i-chev"/></svg></summary>
       <div class="lists-body" id="lists"></div>
     </details>
@@ -530,12 +613,7 @@ body.is-beta .beta-tag { display: inline-block; }
         <input class="field" id="q" type="search" placeholder="Buscar canal, grupo o lista  ( / )" autocomplete="off" spellcheck="false">
         <button class="btn icon ghost clear hidden" id="qClear" aria-label="Borrar búsqueda"><svg class="i" style="width:16px;height:16px"><use href="#i-x"/></svg></button>
       </label>
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-tab="all">Todos</button>
-        <button class="tab" role="tab" data-tab="fav"><svg class="i" style="width:13px;height:13px"><use href="#i-heart"/></svg> Favoritos <span class="n" id="nFav">0</span></button>
-        <button class="tab" role="tab" data-tab="recent">Recientes</button>
-      </div>
-      <select class="field" id="group" aria-label="Categoría"></select>
+      <div class="chips" id="chips" role="tablist" aria-label="Filtrar canales"></div>
     </div>
 
     <div class="channels" id="channels"></div>
@@ -568,8 +646,19 @@ body.is-beta .beta-tag { display: inline-block; }
     </div>
 
     <div class="stage" id="stage">
-      <video id="video" playsinline webkit-playsinline preload="none" controls controlslist="nofullscreen"></video>
+      <video id="video" playsinline webkit-playsinline preload="none"></video>
+      <div class="gesture" id="gesture" aria-hidden="true"></div>
       <div class="stage-cat" id="stageCatTrack"></div>
+      <div class="vctrl" id="vctrl">
+        <button class="vbtn fill" id="vPlay" aria-label="Reproducir"><svg class="i"><use href="#i-play"/></svg></button>
+        <button class="vbtn" id="vMute" aria-label="Silenciar"><svg class="i"><use href="#i-vol"/></svg></button>
+        <input class="vvol" id="vVol" type="range" min="0" max="1" step="0.05" aria-label="Volumen">
+        <button class="vlive" id="vLive" title="Ir al momento actual"><i></i>EN VIVO</button>
+        <span class="vtime" id="vTime"></span>
+        <input class="vseek" id="vSeek" type="range" min="0" max="1000" value="0" aria-label="Posición">
+        <span class="vspacer"></span>
+        <button class="vbtn" id="vFs" aria-label="Pantalla completa"><svg class="i"><use href="#i-max"/></svg></button>
+      </div>
 
       <div class="overlay empty-stage" id="emptyStage">
         <div>
@@ -639,6 +728,11 @@ body.is-beta .beta-tag { display: inline-block; }
         </button>
       </div>
 
+      <div class="media">
+        <button class="btn fill" id="btnPlay" title="Reproducir (Espacio)" aria-label="Reproducir"><svg class="i"><use href="#i-play"/></svg></button>
+        <button class="btn" id="btnMute" title="Silenciar (M)" aria-label="Silenciar"><svg class="i"><use href="#i-vol"/></svg></button>
+      </div>
+
       <div class="dock-info">
         <span class="res" id="res"></span>
         <span class="status-text" id="statusText"></span>
@@ -697,6 +791,7 @@ body.is-beta .beta-tag { display: inline-block; }
     <div class="grp">
       <span class="grp-label">Viole</span>
       <div class="switch-row"><span>Viole pasea (y se asoma en pantalla completa)</span><span class="switch"><input type="checkbox" id="catToggle" aria-label="Mostrar a Viole"></span></div>
+      <div class="switch-row hidden" id="motionRow"><span>Este dispositivo tiene las animaciones reducidas. ¿Que Viole camine igual?</span><span class="switch"><input type="checkbox" id="motionToggle" aria-label="Animar a Viole igualmente"></span></div>
     </div>
     <div class="grp">
       <span class="grp-label">Copia de seguridad</span>
@@ -711,6 +806,7 @@ body.is-beta .beta-tag { display: inline-block; }
       <div class="kv"><span>Listas guardadas</span><b id="kvLists">–</b></div>
       <div class="kv"><span>Espacio usado</span><b id="kvUsage">–</b></div>
       <div class="kv"><span>Protección contra borrado automático</span><b id="kvPersist">–</b></div>
+      <div class="kv"><span>Este dispositivo</span><b id="kvDevice" style="text-align:right">–</b></div>
       <div class="grp-row"><button class="btn" id="btnDemos" style="flex:1">Añadir listas de prueba</button></div>
     </div>
   </div>
@@ -739,7 +835,8 @@ if (IS_BETA) { document.body.classList.add('is-beta'); document.title = 'Viole I
 /* ---------- 1. UTILIDADES ---------- */
 const $ = (s) => document.querySelector(s);
 const IS_ANDROID = /Android/i.test(navigator.userAgent);
-const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+let REDUCED_MOTION = mqReduce.matches;   // se ajusta con el ajuste «que camine igual»
 
 function h(tag, attrs = {}, ...children) {
   // Crea elementos con textContent: nunca se interpreta HTML que venga de una lista M3U.
@@ -955,9 +1052,8 @@ function zap(step) {
 /* ---------- 5. PINTADO ---------- */
 function renderStats() {
   const active = state.playlists.filter((p) => p.enabled).length;
-  $('#stats').textContent = `${active}/${state.playlists.length} listas · ${state.channels.length.toLocaleString('es')} canales`;
   $('#listsCount').textContent = state.playlists.length;
-  $('#nFav').textContent = state.favorites.size;
+  const nf = $('#nFav'); if (nf) nf.textContent = state.favorites.size;
 }
 
 function renderLists() {
@@ -987,20 +1083,28 @@ function renderLists() {
   }
 }
 
-function renderGroups() {
-  const sel = $('#group');
+// Una sola fila de filtros: Todos · Favoritos · Recientes | categorías de las listas.
+function chipKey() { return state.settings.group !== 'ALL' ? 'g:' + state.settings.group : state.settings.tab; }
+function renderChips() {
+  const box = $('#chips');
   const counts = new Map();
   for (const c of state.channels) counts.set(c.group, (counts.get(c.group) || 0) + 1);
-  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'es'));
   if (state.settings.group !== 'ALL' && !counts.has(state.settings.group)) state.settings.group = 'ALL';
-  sel.replaceChildren(h('option', { value: 'ALL', text: `Todas las categorías (${groups.length})` }),
-    ...groups.map((g) => h('option', { value: g, text: `${g}  ·  ${counts.get(g)}` })));
-  sel.value = state.settings.group;
+  const groups = [...counts.keys()].sort((a, b) => a.localeCompare(b, 'es'));
+  const active = chipKey();
+  const chip = (key, ...kids) => h('button', { class: 'chip', role: 'tab', 'data-key': key, 'aria-selected': String(key === active) }, ...kids);
+  box.replaceChildren(
+    chip('all', 'Todos'),
+    chip('fav', icon('i-heart'), 'Favoritos', h('span', { class: 'n', id: 'nFav', text: String(state.favorites.size) })),
+    chip('recent', 'Recientes'),
+    ...(groups.length ? [h('span', { class: 'chip-sep', 'aria-hidden': 'true' })] : []),
+    ...groups.map((g) => chip('g:' + g, g, h('span', { class: 'n', text: String(counts.get(g)) })))
+  );
+  const act = box.querySelector('[aria-selected="true"]');
+  if (act && act.dataset.key.startsWith('g:')) box.scrollLeft = act.offsetLeft - 60;
 }
-
-function renderTabs() {
-  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.tab === state.settings.tab)));
-}
+function renderGroups() { renderChips(); }
+function renderTabs() { renderChips(); }
 
 function logoNode(ch, cls = 'logo') {
   const box = h('div', { class: cls, text: initials(ch.name) });
@@ -1109,7 +1213,7 @@ async function addPlaylist(name, text, sourceUrl = '', fixedId = null) {
   refreshAll();
   askPersistentStorage();
   toast(`Lista "${pl.name}" guardada · ${channels.length.toLocaleString('es')} canales`);
-  catSay('¡Lista nueva! 🐾');
+  catSay(violeLine('list'));
   return true;
 }
 async function togglePlaylist(id) {
@@ -1187,6 +1291,7 @@ function teardown() {
   try { video.load(); } catch {}
   $('#qualityRow').classList.add('hidden');
   $('#res').textContent = '';
+  $('#stage').classList.remove('show-ctrl');
 }
 
 function playChannel(ch, opts = {}) {
@@ -1199,6 +1304,7 @@ function playChannel(ch, opts = {}) {
   Engine.autoReconnects = opts.keepReconnects ? Engine.autoReconnects : 0;
   startStream(ch.url, opts);
   catPoke();
+  if (!opts.keepReconnects && Math.random() < 0.3) setTimeout(() => catSay(violeLine('zap')), 900);
 }
 
 function startStream(url, { native = false } = {}) {
@@ -1208,6 +1314,7 @@ function startStream(url, { native = false } = {}) {
   Engine.url = url;
   Engine.mediaRetries = 0;
   Engine.hadPlayback = false;
+  Engine.live = null;
   $('#error').classList.add('hidden');
   $('#btnUnmute').classList.add('hidden');
   showLoading(true);
@@ -1240,6 +1347,11 @@ function startHls(url, token) {
     if (token !== Engine.token) return;
     setupQuality(data.levels);
     tryPlay(token);
+  });
+  hls.on(Hls.Events.LEVEL_LOADED, (_e, data) => {
+    if (token !== Engine.token) return;
+    Engine.live = !!(data.details && data.details.live);
+    updateTimeUI();
   });
   hls.on(Hls.Events.LEVEL_SWITCHED, (_e, data) => {
     if (token !== Engine.token) return;
@@ -1315,6 +1427,44 @@ video.addEventListener('volumechange', () => {
 });
 $('#btnUnmute').addEventListener('click', () => { video.muted = false; $('#btnUnmute').classList.add('hidden'); state.settings.muted = false; saveSettings(); });
 
+/* ---------- Controles propios: pausa y sonido ----------
+   No dependemos de los controles del navegador: en algunas tablets no aparecen. */
+function setBtnIcon(btn, id) { btn.querySelector('use').setAttribute('href', '#' + id); }
+function syncMediaButtons() {
+  const paused = video.paused || !Engine.mode;
+  const play = $('#btnPlay'), mute = $('#btnMute');
+  setBtnIcon(play, paused ? 'i-play' : 'i-pause');
+  play.title = paused ? 'Reproducir (Espacio)' : 'Pausar (Espacio)';
+  play.setAttribute('aria-label', paused ? 'Reproducir' : 'Pausar');
+  setBtnIcon(mute, video.muted ? 'i-mute' : 'i-vol');
+  mute.title = video.muted ? 'Activar sonido (M)' : 'Silenciar (M)';
+  mute.setAttribute('aria-label', video.muted ? 'Activar sonido' : 'Silenciar');
+  mute.classList.toggle('is-off', video.muted);
+  setBtnIcon($('#vPlay'), paused ? 'i-play' : 'i-pause');
+  $('#vPlay').setAttribute('aria-label', paused ? 'Reproducir' : 'Pausar');
+  setBtnIcon($('#vMute'), video.muted ? 'i-mute' : 'i-vol');
+  $('#vVol').value = video.muted ? 0 : video.volume;
+}
+function togglePlay() {
+  if (!state.current) { toast('Primero elige un canal'); return; }
+  if (!Engine.mode) { playChannel(state.current); return; }      // tras un error: vuelve a conectar
+  if (video.paused) {
+    // En directo, si estuvo mucho rato en pausa, vuelve al momento actual de la emisión
+    const live = Engine.hls && Engine.hls.liveSyncPosition;
+    if (live && video.currentTime < live - 15) video.currentTime = live;
+    video.play().catch(() => {});
+  } else { video.pause(); if (Math.random() < 0.5) setTimeout(() => catSay(violeLine('pause')), 300); }
+}
+function toggleMute() {
+  video.muted = !video.muted;
+  $('#btnUnmute').classList.add('hidden');
+  state.settings.muted = video.muted;
+  saveSettings();
+}
+$('#btnPlay').addEventListener('click', togglePlay);
+$('#btnMute').addEventListener('click', toggleMute);
+['play', 'pause', 'playing', 'volumechange', 'emptied'].forEach((ev) => video.addEventListener(ev, syncMediaButtons));
+
 function setupQuality(levels) {
   const row = $('#qualityRow'), sel = $('#quality');
   if (!levels || levels.length <= 1) { row.classList.add('hidden'); return; }
@@ -1349,6 +1499,7 @@ function showError(kind) {
   if (kind !== 'mixed' && canNativeHls()) add('Reproductor del sistema', 'i-play', () => playChannel(state.current, { native: true }));
   add('Copiar enlace', 'i-copy', copyCurrentUrl, kind === 'mixed');
   if (IS_ANDROID) add('Abrir en otra app', 'i-ext', openExternal);
+  setTimeout(() => catSay(violeLine('error')), 900);
   $('#errInfo').hidden = true;
   $('#errMore').setAttribute('aria-expanded', 'false');
   $('#error').classList.remove('hidden');
@@ -1368,10 +1519,92 @@ function openExternal() {
 
 /* ---------- Pantalla completa ---------- */
 const stage = $('#stage');
-function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement) || stage.classList.contains('pseudo-fs'); }
+function isFullscreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) || stage.classList.contains('pseudo-fs'); }
+function syncFsClass() { stage.classList.toggle('is-fs', isFullscreen()); }
+// Si se usa el botón de pantalla completa del propio vídeo (Firefox lo muestra),
+// se intenta pasar a la pantalla completa de la app, donde sí puede aparecer Viole.
+// Si el navegador no lo permite, se queda como está.
+let fsExiting = false;
+document.addEventListener('fullscreenchange', () => {
+  const el = document.fullscreenElement;
+  syncFsIcon();
+  if (!el) { fsExiting = false; return; }
+  if (el === video) {
+    if (fsExiting) { document.exitFullscreen().catch(() => {}); return; }
+    stage.requestFullscreen().catch(() => {});
+  }
+});
+/* ---------- Controles propios sobre el vídeo ----------
+   No usamos los del navegador: Firefox se quedaba con los toques y no dejaba
+   hacer doble toque ni mostrar a Viole en pantalla completa.
+   - Tablet: un toque muestra u oculta los controles; doble toque, pantalla completa.
+   - Ratón:  clic pausa o reanuda; doble clic, pantalla completa; al moverlo aparecen los controles. */
+let ctrlTimer = 0, tapAt = 0, tapTimer = 0;
+function showControls(ms = 3200) {
+  if (!Engine.mode) return;
+  stage.classList.add('show-ctrl');
+  clearTimeout(ctrlTimer);
+  if (!video.paused) ctrlTimer = setTimeout(() => hideControls(), ms);
+}
+function hideControls(force) {
+  if (!force && video.paused && Engine.mode) return;        // en pausa se quedan a la vista
+  clearTimeout(ctrlTimer);
+  stage.classList.remove('show-ctrl');
+}
+$('#gesture').addEventListener('click', (e) => {
+  const now = performance.now();
+  if (now - tapAt < 350) { clearTimeout(tapTimer); tapAt = 0; toggleFullscreen(); return; }   // doble toque / doble clic
+  tapAt = now;
+  const mouse = e.pointerType ? e.pointerType === 'mouse' : !mqTouch.matches;
+  tapTimer = setTimeout(() => {
+    if (mouse) { togglePlay(); showControls(); }
+    else if (stage.classList.contains('show-ctrl')) hideControls(true);
+    else showControls();
+  }, 350);
+});
+// Solo ratón real: en tablets, cada toque genera también un «mousemove» falso que deshacía el toque
+stage.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') showControls(2500); });
+$('#vctrl').addEventListener('pointerdown', () => showControls());   // mientras se usan, no se esconden
+$('#vPlay').addEventListener('click', togglePlay);
+$('#vMute').addEventListener('click', toggleMute);
+$('#vFs').addEventListener('click', () => toggleFullscreen());
+$('#vVol').addEventListener('input', (e) => {
+  video.volume = Number(e.target.value);
+  if (video.muted && video.volume > 0) toggleMute();
+});
+$('#vLive').addEventListener('click', () => {
+  const live = Engine.hls && Engine.hls.liveSyncPosition;
+  if (live) video.currentTime = live;
+  video.play().catch(() => {});
+});
+$('#vSeek').addEventListener('input', (e) => { if (isFinite(video.duration)) video.currentTime = video.duration * Number(e.target.value) / 1000; });
+video.addEventListener('play', () => showControls());
+video.addEventListener('pause', () => showControls());
+video.addEventListener('timeupdate', updateTimeUI);
+video.addEventListener('durationchange', updateTimeUI);
+function fmtTime(t) {
+  t = Math.max(0, Math.floor(t || 0));
+  const hh = Math.floor(t / 3600), mm = Math.floor((t % 3600) / 60), ss = t % 60;
+  return (hh ? hh + ':' + String(mm).padStart(2, '0') : mm) + ':' + String(ss).padStart(2, '0');
+}
+function updateTimeUI() {
+  const live = Engine.mode === 'hls' ? Engine.live !== false : !isFinite(video.duration);
+  $('#vctrl').classList.toggle('is-live', live);
+  if (live) {
+    const edge = Engine.hls && Engine.hls.liveSyncPosition;
+    $('#vLive').classList.toggle('behind', !!(edge && video.currentTime < edge - 12));
+  } else if (isFinite(video.duration) && video.duration > 0) {
+    $('#vTime').textContent = fmtTime(video.currentTime) + ' / ' + fmtTime(video.duration);
+    $('#vSeek').value = Math.round((video.currentTime / video.duration) * 1000);
+  }
+}
+function syncFsIcon() { setBtnIcon($('#vFs'), isFullscreen() ? 'i-min' : 'i-max'); }
+new MutationObserver(syncFsIcon).observe(stage, { attributes: true, attributeFilter: ['class'] });
+
 async function toggleFullscreen() {
   if (stage.classList.contains('pseudo-fs')) { stage.classList.remove('pseudo-fs'); return; }
   if (document.fullscreenElement || document.webkitFullscreenElement) {
+    fsExiting = true;
     try { await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen()); } catch {}
     return;
   }
@@ -1394,7 +1627,73 @@ async function toggleFullscreen() {
    Cada paseo lleva un número (gen). Si cambia el modo, el paseo viejo se abandona. */
 const Cat = { x: -999, gen: 0, timer: 0, mode: '', peeking: false, lastPeek: 0 };
 const catEl = $('#cat');
-const CAT_LINES = ['Prrr…', 'Miau 🐾', 'Aquí vigilando', 'Buen canal', '¿Otro capítulo?', 'Zzz…'];
+/* Frases de Viole (de «Violento»). Irónico, dramático, nada tierno.
+   Se sacan de una bolsa barajada: no repite hasta haberlas dicho todas. */
+const VIOLE_LINES = {
+  tap: [
+    'Tócame otra vez y el sofá lo paga.',
+    'No soy tierno. Me llamo Violento por algo.',
+    'Esto no es cariño. Es una inspección.',
+    '¿Me tocaste? Anotado. Venganza a las 3:47.',
+    'Sigue así y te desordeno los favoritos.',
+    'Mi agenda: dormir, juzgarte, dormir más.',
+    'Te quiero. Mentira. Comida.',
+    'Estoy afilando las uñas. Por nada en especial.',
+    'Si buscas ternura, cambia de lista.',
+    'Tengo 9 vidas y ninguna para escucharte.',
+    'Ese vaso de la mesa me está mirando raro.',
+    'No me sigas, no soy influencer. Bueno, sí.',
+    'Ronroneo, pero es una amenaza.',
+    'Lo rompí yo. Y lo volvería a hacer.',
+    'Modo avión: activado. El avión eres tú.',
+    'Pulsa otra vez. Te reto.',
+    'Mi pelo ya está en tu ropa negra. Gané.',
+    'Los lunes los inventaron los perros.'
+  ],
+  zap: [
+    '¿Otro canal? Decide algo en tu vida.',
+    'El algoritmo soy yo. Y digo que no.',
+    'Cambia de canal o cambio de dueño.',
+    'Este también es malo. Siguiente, cobarde.',
+    'Haces zapping como yo cazo moscas: fatal.',
+    'Ponme algo con pájaros o me voy.',
+    'Ni Netflix sabe qué quieres. Yo tampoco.'
+  ],
+  error: [
+    'Sin señal. Yo no fui. Esta vez.',
+    'Mordí el cable. Es broma. ¿O no?',
+    'El servidor me tiene miedo. Normal.',
+    'Tu wifi y yo: desaparecemos cuando más nos necesitas.',
+    'Se cayó. Como todo lo que toco.'
+  ],
+  list: [
+    'Más canales para ignorar. Perfecto.',
+    'Lista guardada. No me pidas que la vea.',
+    '¿Otra lista? Acumulas como yo pelos en tu ropa.'
+  ],
+  hello: [
+    'Llegó el jefe. Siéntate.',
+    'Volviste. Qué decepción tan predecible.',
+    'Tú enciendes la tele. Yo enciendo el caos.'
+  ],
+  pause: [
+    'Pausa. Por fin algo que haces bien.',
+    'Pausaste. Ahora dame comida.',
+    'Silencio. Así me gusta.'
+  ],
+  peek: [
+    'Solo vine a juzgar.',
+    'Sigan viendo. Yo vigilo.',
+    'Nadie me invitó. Por eso vine.',
+    'Me aburrí. Me voy.',
+    'Ese actor no me convence.'
+  ]
+};
+const lineBags = {};
+function violeLine(kind) {
+  if (!lineBags[kind] || !lineBags[kind].length) lineBags[kind] = [...VIOLE_LINES[kind]].sort(() => Math.random() - 0.5);
+  return lineBags[kind].pop();
+}
 const mqPortrait = window.matchMedia('(orientation: portrait)');
 const mqTouch = window.matchMedia('(pointer: coarse)');
 
@@ -1447,25 +1746,30 @@ async function catRun(firstDelay) {
   if (Cat.mode === 'peek') {
     // Si estaba a la vista (por ejemplo, al girar la tablet), se va caminando.
     if (!moved && Cat.x >= 0 && Cat.x <= max && !REDUCED_MOTION) {
-      const ms = catWalkTo(Cat.x < max / 2 ? -catW() - 20 : track.clientWidth + 20, 45);
+      const ms = catWalkTo(Cat.x < max / 2 ? -catW() - 20 : track.clientWidth + 20, 64);
       if (!(await catSleep(ms, gen))) return;
       catStop();
     } else {
       catSet(-catW() - 20, 0);
     }
-    if (REDUCED_MOTION) return;
-    let delay = firstDelay ?? 2500;
+    if (REDUCED_MOTION) {                                  // sin animaciones: quieto, pero a la vista
+      if (!isFullscreen()) { catSet(max * 0.5, 0); return; }
+      catSet(max * 0.12, 0);
+      if (await catSleep(6000, gen)) catSet(-catW() - 20, 0);
+      return;
+    }
+    let delay = firstDelay ?? 1500;
     for (;;) {
       if (!(await catSleep(delay, gen))) return;
       if (!document.hidden && !(await catPeek(gen))) return;
-      delay = isFullscreen() ? 180000 + Math.random() * 120000 : 60000 + Math.random() * 60000;
+      delay = isFullscreen() ? 180000 + Math.random() * 120000 : 40000 + Math.random() * 40000;
     }
   }
 
   // 'roam' y 'patrol': siempre a la vista
   if (Cat.x < 0 || Cat.x > max) catSet(max * (0.25 + Math.random() * 0.5), 0);
   if (REDUCED_MOTION) return;
-  const [speed, minW, maxW] = Cat.mode === 'patrol' ? [32, 2500, 6500] : [26, 15000, 35000];
+  const [speed, minW, maxW] = Cat.mode === 'patrol' ? [46, 2500, 6500] : [38, 15000, 35000];
   let delay = firstDelay ?? (Cat.mode === 'patrol' ? 1500 : 6000);
   for (;;) {
     if (!(await catSleep(delay, gen))) return;
@@ -1485,10 +1789,10 @@ async function catPeek(gen) {
   const W = catTrack().clientWidth, cw = catW();
   if (W < cw * 2) return gen === Cat.gen;
   Cat.peeking = true;
-  const speed = isFullscreen() ? 75 : 40;
+  const speed = isFullscreen() ? 110 : 58;
   const fromLeft = Math.random() < 0.5;
   const out = fromLeft ? -cw - 20 : W + 20;
-  const into = Math.min(W * (0.15 + Math.random() * 0.2), speed * 4.5);   // como mucho ~4,5 s caminando
+  const into = Math.min(W * (0.25 + Math.random() * 0.2), speed * 6);     // como mucho ~6 s caminando
   const stop = fromLeft ? into : W - cw - into;
   catSet(out, 0);
   await nextFrame();
@@ -1496,7 +1800,8 @@ async function catPeek(gen) {
   let ms = catWalkTo(stop, speed);
   if (!(await catSleep(ms, gen))) return false;
   catStop();
-  if (!(await catSleep(2200 + Math.random() * 1500, gen))) return false; // se queda mirando
+  if (Math.random() < 0.4) catSay(violeLine('peek'));
+  if (!(await catSleep(3500 + Math.random() * 1500, gen))) return false; // se queda mirando
   ms = catWalkTo(out, speed);
   if (!(await catSleep(ms, gen))) return false;
   catStop();
@@ -1522,7 +1827,7 @@ function catSay(text) {
   b.textContent = text;
   b.classList.add('show');
   clearTimeout(b._t);
-  b._t = setTimeout(() => b.classList.remove('show'), 2600);
+  b._t = setTimeout(() => b.classList.remove('show'), Math.min(6000, 2200 + text.length * 55));   // más largo, más tiempo
 }
 function applyCatSetting() {
   document.body.classList.toggle('no-cat', !state.settings.cat);
@@ -1530,8 +1835,24 @@ function applyCatSetting() {
   if (state.settings.cat) catRun();
   else { Cat.gen++; clearTimeout(Cat.timer); }
 }
-catEl.addEventListener('click', () => catSay(CAT_LINES[Math.floor(Math.random() * CAT_LINES.length)]));
-['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => setTimeout(catRefresh, 120)));
+catEl.addEventListener('click', (e) => { e.stopPropagation(); catSay(violeLine('tap')); });
+
+// Tocar la barra llama a Viole: camina hacia donde tocas (o se asoma, si estaba escondida).
+async function catGoTo(x) {
+  const gen = ++Cat.gen;
+  clearTimeout(Cat.timer);
+  const ms = catWalkTo(Math.max(0, Math.min(catMax(), x - catW() / 2)), 100);
+  if (!(await catSleep(ms, gen))) return;
+  catStop();
+  catSay(violeLine('tap'));
+  catRun(Cat.mode === 'patrol' ? 4000 : 15000);
+}
+$('#catTrack').addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.cat') || !state.settings.cat || REDUCED_MOTION) return;
+  if (Cat.mode === 'peek') { if (!Cat.peeking) catRun(0); return; }
+  catGoTo(e.clientX - $('#catTrack').getBoundingClientRect().left);
+});
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => { syncFsClass(); setTimeout(catRefresh, 120); }));
 new MutationObserver(catRefresh).observe(stage, { attributes: true, attributeFilter: ['class'] });   // pseudo pantalla completa
 mqPortrait.addEventListener('change', () => setTimeout(catRefresh, 250));
 let catResizeT;
@@ -1750,10 +2071,18 @@ $('#listsBox').addEventListener('toggle', () => { state.settings.listsOpen = $('
 
 $('#q').addEventListener('input', applyFilters);
 $('#qClear').addEventListener('click', () => { $('#q').value = ''; applyFilters(); $('#q').focus(); });
-$('#group').addEventListener('change', (e) => { state.settings.group = e.target.value; saveSettings(); applyFilters(); });
-document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
-  state.settings.tab = t.dataset.tab; saveSettings(); renderTabs(); applyFilters();
-}));
+$('#chips').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  const k = b.dataset.key;
+  if (k.startsWith('g:')) { state.settings.tab = 'all'; state.settings.group = k.slice(2); }
+  else { state.settings.tab = k; state.settings.group = 'ALL'; }
+  saveSettings(); renderChips(); applyFilters();
+});
+// Con ratón, la rueda desplaza la fila de categorías hacia los lados
+$('#chips').addEventListener('wheel', (e) => {
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { $('#chips').scrollLeft += e.deltaY; e.preventDefault(); }
+}, { passive: false });
 
 $('#btnPrev').addEventListener('click', () => zap(-1));
 $('#btnNext').addEventListener('click', () => zap(1));
@@ -1829,8 +2158,16 @@ $('#skinSeg').addEventListener('click', (e) => {
   state.settings.skin = b.dataset.skin; saveSettings(); applySkin();
 });
 $('#catToggle').addEventListener('change', (e) => { state.settings.cat = e.target.checked; saveSettings(); applyCatSetting(); });
+function updateMotion() {
+  REDUCED_MOTION = mqReduce.matches && !state.settings.forceMotion;
+  document.body.classList.toggle('reduce-motion', REDUCED_MOTION);
+  $('#motionRow').classList.toggle('hidden', !mqReduce.matches);   // solo se ofrece si el sistema reduce animaciones
+  $('#motionToggle').checked = !!state.settings.forceMotion;
+}
+$('#motionToggle').addEventListener('change', (e) => { state.settings.forceMotion = e.target.checked; saveSettings(); updateMotion(); catRun(); });
 $('#btnSettings').addEventListener('click', async () => {
   $('#kvLists').textContent = `${state.playlists.length} · ${DB.available ? 'guardadas' : 'solo en esta sesión'}`;
+  $('#kvDevice').textContent = deviceSummary();
   $('#dlgSettings').showModal();
   try {
     const est = await navigator.storage.estimate();
@@ -1886,7 +2223,8 @@ window.addEventListener('keydown', (e) => {
   if (!$('#error').classList.contains('hidden') && (e.code === 'Space' || e.key === 'ArrowUp')) { e.preventDefault(); runnerJump(); return; }
   const k = e.key.toLowerCase();
   if (k === 'f') { e.preventDefault(); toggleFullscreen(); }
-  else if (k === 'm') { video.muted = !video.muted; $('#btnUnmute').classList.add('hidden'); }
+  else if (k === 'm') toggleMute();
+  else if (e.code === 'Space' && !e.target.closest('button')) { e.preventDefault(); togglePlay(); }
   else if (k === 'r') playChannel(state.current);
   else if (k === 's') toggleFavorite(state.current);
   else if (k === '/') { e.preventDefault(); if (window.innerWidth < 900) openSide(); $('#q').focus(); }
@@ -1916,7 +2254,7 @@ async function addDemos() {
 async function boot() {
   applySkin();
   document.body.classList.toggle('side-collapsed', state.settings.sideCollapsed);
-  $('#listsBox').open = state.settings.listsOpen;
+  $('#listsBox').open = false;   // las listas siempre empiezan cerradas
 
   const ok = await DB.open();
   if (ok) {
@@ -1944,9 +2282,25 @@ async function boot() {
     if (window.Hls) go(); else window.addEventListener('load', go, { once: true });
   }
 
+  updateMotion();
+  syncMediaButtons();
   applyCatSetting();
-  if (state.settings.cat) setTimeout(() => catSay('Miau 🐾'), 1200);
+  if (state.settings.cat) setTimeout(() => catSay(violeLine('hello')), 1600);
 }
+function deviceSummary() {
+  // Para diagnosticar problemas: dime qué pone aquí si algo no se ve bien.
+  const m = navigator.userAgent.match(/(Firefox|EdgA?|OPR|SamsungBrowser|Chrome)\/(\d+)/);
+  const name = m ? (({ Edg: 'Edge', EdgA: 'Edge', OPR: 'Opera', SamsungBrowser: 'Samsung' })[m[1]] || m[1]) + ' ' + m[2] : 'Navegador';
+  return [name, mqTouch.matches ? 'táctil' : 'ratón', mqPortrait.matches ? 'vertical' : 'horizontal', `${innerWidth}×${innerHeight}`,
+          REDUCED_MOTION ? 'animaciones reducidas' : null, 'Viole: ' + (Cat.mode || '–'),
+          navigator.serviceWorker && navigator.serviceWorker.controller ? 'instalable ✓' : null].filter(Boolean).join(' · ');
+}
+
+// Service worker: permite "Instalar" la app. Solo vigila la apertura de la página; no guarda vídeos.
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register(IS_BETA ? '../sw.js' : 'sw.js').catch(() => {});
+}
+
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot) : boot();
 </script>
 </body>
